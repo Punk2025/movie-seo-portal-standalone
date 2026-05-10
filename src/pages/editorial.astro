@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+
+const title = `编辑政策 | ${SITE_DISPLAY_NAME}`;
+const description = '选题原则、事实核对、纠错机制与中立性说明。';
+const path = paths.editorial();
+---
+
+<BaseLayout title={title} description={description} path={path}>
+	<article class="mx-auto max-w-3xl space-y-6 py-10 text-zinc-700 dark:text-zinc-300">
+		<h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-50">编辑政策</h1>
+		<p class="leading-relaxed">
+			本站以<strong>可核对、可更新、少误伤</strong>为编辑准则。正文以数据源与公开材料为主，不编造剧情结局或虚假信息。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">1. 选题与收录</h2>
+		<p class="leading-relaxed">
+			收录范围由运营策略与数据可用性共同决定；对家庭观众可能不适的内容，我们会在能力范围内通过文案提示或分级标签（若数据源提供）予以标注。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">2. 事实与引用</h2>
+		<ul class="list-inside list-disc space-y-2 leading-relaxed">
+			<li>片名、年份、主演等字段以<strong>合作数据与权利方材料</strong>为准；发现冲突时优先以<strong>权利方或权威片库</strong>为准。</li>
+			<li>自动生成的摘录与摘要仅作阅读辅助，不代表本站立场；可能包含不精确表述，请务必以正片与原作品为准。</li>
+		</ul>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">3. 纠错与更新</h2>
+		<p class="leading-relaxed">
+			欢迎通过
+			<a href={paths.contact()} class="text-amber-700 hover:underline dark:text-amber-400">
+				联系我们
+			</a>
+			提交纠错（请附 URL、截图或参考来源）。核实后，我们将在合作数据允许的前提下推动更正。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">4. 利益冲突与广告</h2>
+		<p class="leading-relaxed">
+			若存在商业推广或赞助内容，将在页面或段落级进行<strong>可识别标注</strong>；算法推荐与热门排序不排除商业合作，但不会隐藏收费披露义务（以当地法律为准）。
+		</p>
+	</article>
+</BaseLayout>

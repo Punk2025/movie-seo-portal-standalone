@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+
+const title = `隐私政策 | ${SITE_DISPLAY_NAME}`;
+const description = '本站如何收集、使用与保护访客信息。';
+const path = paths.privacy();
+---
+
+<BaseLayout title={title} description={description} path={path}>
+	<article class="mx-auto max-w-3xl space-y-6 py-10 text-zinc-700 dark:text-zinc-300">
+		<h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-50">隐私政策</h1>
+		<p class="text-sm text-zinc-500 dark:text-zinc-400">最近更新：上线时将在此处填写修订日期。</p>
+		<p class="leading-relaxed">
+			我们重视您的隐私。本政策说明在您访问「{SITE_DISPLAY_NAME}」时，我们可能处理的<strong>最少必要信息</strong>及用途。若您不同意本政策，请停止使用本站。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">1. 我们收集什么</h2>
+		<ul class="list-inside list-disc space-y-2 leading-relaxed">
+			<li>
+				<strong>浏览与服务运维：</strong>服务器或 CDN 可能记录 IP、User-Agent、访问路径与时间等日志，用于安全审计、故障排查与统计。
+			</li>
+			<li>
+				<strong>本地存储：</strong>为保持主题或语言偏好，可能使用 <code class="rounded bg-zinc-200 px-1 dark:bg-zinc-800">localStorage</code>／Cookie
+				（若站点启用），您可在浏览器中清除。
+			</li>
+			<li>
+				本站以浏览与阅读为主，一般不强制注册账号，也不要求您提交真实姓名与身份证号（除非您在联系邮件中自愿提供）。
+			</li>
+		</ul>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">2. 我们如何使用</h2>
+		<p class="leading-relaxed">
+			信息仅用于提供与改进服务、防御滥用与满足法律法规要求；除法律强制或经您同意外，不向第三方出售您的个人信息。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">3. 第三方与外链</h2>
+		<p class="leading-relaxed">
+			页面可能含外链至合作平台、播出方或引用来源；其隐私实践由对方单独负责，建议您阅读对应站点的隐私政策。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">4. 联系与修订</h2>
+		<p class="leading-relaxed">
+			有关本政策的疑问或请求，请通过
+			<a href={paths.contact()} class="text-amber-700 hover:underline dark:text-amber-400">
+				联系我们
+			</a>。我们可能随业务变化更新本页，重大变更将在页面显著位置提示。
+		</p>
+	</article>
+</BaseLayout>

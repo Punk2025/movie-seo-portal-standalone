@@ -1,0 +1,117 @@
+---
+/**
+ * 数据源已配置时：由 `/api/runtime/portal-cta?slug=` 在运行期拉取弱引导区块，
+ * 与后台弱引导方案开关一致。关闭方案时仅隐藏本区块，不影响详情页其它模块。
+ */
+interface Props {
+	slug: string;
+	/** 无尾斜杠；可设 `import.meta.env.PUBLIC_RUNTIME_API_BASE` 指向外置 BFF */
+	runtimeApiBase: string;
+}
+
+const { slug, runtimeApiBase } = Astro.props;
+const base = runtimeApiBase.trim().replace(/\/$/, '');
+/** 避免固定 id 与其它脚本冲突；仅用 CSS id 安全字符 */
+const domId = `portal-cta-${slug.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+---
+
+<div
+	id={domId}
+	class="portal-cta-runtime"
+	data-slug={slug}
+	data-api-base={base}
+	hidden
+	aria-hidden="true"
+>
+</div>
+
+<script define:vars={{ domId }}>
+	(() => {
+		const root = document.getElementById(domId);
+		if (!root) return;
+		const slug = root.getAttribute('data-slug') ?? '';
+		const base = (root.getAttribute('data-api-base') ?? '').trim().replace(/\/$/, '');
+		if (!slug) {
+			root.replaceChildren();
+			root.hidden = true;
+			root.setAttribute('aria-hidden', 'true');
+			return;
+		}
+		const qs = new URLSearchParams({ slug });
+		const url = base ? `${base}/portal-cta?${qs}` : `/api/runtime/portal-cta?${qs}`;
+
+		function hideBlock() {
+			root.replaceChildren();
+			root.hidden = true;
+			root.setAttribute('aria-hidden', 'true');
+		}
+
+		function renderLinks(links) {
+			root.replaceChildren();
+			const sec = document.createElement('section');
+			sec.className = 'mt-10 space-y-4';
+			sec.setAttribute('aria-label', '相关引导链接');
+			const h2 = document.createElement('h2');
+			h2.className = 'text-xl font-bold text-zinc-900 dark:text-zinc-50';
+			h2.textContent = '观看与延伸阅读';
+			sec.appendChild(h2);
+			const ul = document.createElement('ul');
+			ul.className = 'space-y-3';
+			for (const link of links) {
+				const li = document.createElement('li');
+				li.className =
+					'rounded-lg border border-zinc-200 bg-zinc-50/80 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/40';
+				const a = document.createElement('a');
+				a.href = link.url;
+				a.target = '_blank';
+				a.rel = 'noopener noreferrer';
+				a.className = 'font-medium text-amber-800 hover:underline dark:text-amber-400';
+				a.textContent = link.label;
+				li.appendChild(a);
+				if (link.subtitle) {
+					const p = document.createElement('p');
+					p.className = 'mt-1 text-sm text-zinc-600 dark:text-zinc-400';
+					p.textContent = link.subtitle;
+					li.appendChild(p);
+				}
+				ul.appendChild(li);
+			}
+			sec.appendChild(ul);
+			root.appendChild(sec);
+			root.hidden = false;
+			root.setAttribute('aria-hidden', 'false');
+		}
+
+		fetch(url)
+			.then((r) => {
+				if (!r.ok) throw new Error(String(r.status));
+				return r.json();
+			})
+			.then((data) => {
+				const links = data && typeof data === 'object' && 'links' in data ? data.links : null;
+				if (!Array.isArray(links) || links.length === 0) {
+					hideBlock();
+					return;
+				}
+				const normalized = [];
+				for (const x of links) {
+					if (!x || typeof x !== 'object') continue;
+					const u = x.url;
+					const label = x.label;
+					if (typeof u !== 'string' || typeof label !== 'string') continue;
+					const row = { url: u, label };
+					if (typeof x.subtitle === 'string') row.subtitle = x.subtitle;
+					normalized.push(row);
+				}
+				if (normalized.length === 0) {
+					hideBlock();
+					return;
+				}
+				renderLinks(normalized);
+			})
+			.catch(() => {
+				/** 接口不存在（纯静态托管）或网络错误：仅隐藏弱引导块，勿影响正文 */
+				hideBlock();
+			});
+	})();
+</script>

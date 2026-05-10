@@ -1,0 +1,91 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+	getNiuniuClientFromEnv,
+	getNiuniuDiscoveryPool,
+	isNiuniuConfigured,
+	moviesForReviewsHubFromPool,
+} from '../../data/niuniu-build';
+import { getLatestReviews } from '../../data/mock';
+import { paths } from '../../lib/paths';
+import { SITE_DISPLAY_NAME } from '../../lib/site-brand';
+
+const useNiuniu = isNiuniuConfigured();
+const cfg = useNiuniu ? getNiuniuClientFromEnv() : null;
+const pool = useNiuniu && cfg ? await getNiuniuDiscoveryPool(cfg) : [];
+const hub =
+	useNiuniu && pool.length > 0 ? moviesForReviewsHubFromPool(pool) : null;
+
+const title = `观看影评 | ${SITE_DISPLAY_NAME}`;
+const description = '影评长文与摘录导读。';
+const path = paths.reviewsHub();
+
+const jsonLd =
+	hub && hub.movies.length > 0
+		? {
+				'@context': 'https://schema.org',
+				'@type': 'ItemList',
+				name: '影评聚合',
+				numberOfItems: hub.movies.length,
+				itemListElement: hub.movies.map((m, i) => ({
+					'@type': 'ListItem',
+					position: i + 1,
+					url: new URL(paths.review(m.slug), Astro.site).href,
+					name: m.seoTitle?.trim() || `${m.title} · 影评`,
+				})),
+			}
+		: undefined;
+---
+
+<BaseLayout title={title} description={description} path={path} jsonLd={jsonLd}>
+	<div class="py-10">
+		<nav class="text-sm text-zinc-500 dark:text-zinc-400" aria-label="面包屑">
+			<a href={paths.home()} class="text-amber-700 hover:underline dark:text-amber-400">首页</a>
+			<span class="mx-1 text-zinc-400">/</span>
+			<span class="text-zinc-600 dark:text-zinc-300">观看影评</span>
+		</nav>
+
+		<h1 class="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">观看影评</h1>
+
+		<div class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+			{
+				useNiuniu && hub && hub.movies.length > 0 ? (
+					hub.movies.map((m) => (
+						<a
+							href={paths.review(m.slug)}
+							class="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900"
+						>
+							<h3 class="font-semibold text-zinc-900 dark:text-zinc-100">
+								{m.seoTitle?.trim() || `${m.title.trim() || '影片'} · 影评`}
+							</h3>
+							<p class="mt-2 line-clamp-4 text-sm text-zinc-600 dark:text-zinc-400">
+								{(
+									m.seoDescription?.trim() ||
+									m.ai_review?.trim() ||
+									m.description?.trim() ||
+									'暂无摘录'
+								).slice(0, 220)}
+							</p>
+						</a>
+					))
+				) : !useNiuniu ? (
+					getLatestReviews().map((r) => (
+						<a
+							href={paths.review(r.slug)}
+							class="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900"
+						>
+							<h3 class="font-semibold text-zinc-900 dark:text-zinc-100">{r.meta_title}</h3>
+							<p class="mt-2 line-clamp-4 text-sm text-zinc-600 dark:text-zinc-400">
+								{r.meta_description}
+							</p>
+						</a>
+					))
+				) : (
+					<p class="col-span-full rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-600">
+						暂无影评内容。
+					</p>
+				)
+			}
+		</div>
+	</div>
+</BaseLayout>

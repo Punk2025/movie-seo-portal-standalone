@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getNiuniuClientFromEnv, isNiuniuConfigured } from '../../data/niuniu-build';
+import { loadTopicIndexCards } from '../../lib/topic-index-cards';
+import { paths } from '../../lib/paths';
+import { SITE_DISPLAY_NAME } from '../../lib/site-brand';
+
+const useRemote = isNiuniuConfigured();
+const cfg = useRemote ? getNiuniuClientFromEnv() : null;
+const cards = await loadTopicIndexCards(cfg);
+
+const title = `专题收录 · 全部导读 | ${SITE_DISPLAY_NAME}`;
+const description = '精选专题导读与相关收录。';
+const path = paths.topicsIndex();
+
+const jsonLd =
+	cards.length > 0
+		? {
+				'@context': 'https://schema.org',
+				'@type': 'ItemList',
+				name: '专题收录',
+				numberOfItems: cards.length,
+				itemListElement: cards.slice(0, 50).map((c, i) => ({
+					'@type': 'ListItem',
+					position: i + 1,
+					url: new URL(paths.topic(c.slug), Astro.site).href,
+					name: c.title,
+				})),
+			}
+		: undefined;
+---
+
+<BaseLayout title={title} description={description} path={path} jsonLd={jsonLd}>
+	<div class="py-10">
+		<nav class="text-sm text-zinc-500 dark:text-zinc-400" aria-label="面包屑">
+			<a href={paths.home()} class="text-amber-700 hover:underline dark:text-amber-400">首页</a>
+			<span class="mx-1 text-zinc-400">/</span>
+			<span class="text-zinc-600 dark:text-zinc-300">专题</span>
+		</nav>
+
+		<h1 class="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">专题收录</h1>
+
+		{
+			cards.length > 0 ? (
+				<ul class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+					{cards.map((c) => (
+						<li>
+							<a
+								href={paths.topic(c.slug)}
+								class="flex h-full flex-col rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-amber-400 hover:shadow dark:border-zinc-700 dark:bg-zinc-900"
+							>
+								<h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-50">{c.title}</h2>
+								<p class="mt-2 line-clamp-3 flex-1 text-sm text-zinc-600 dark:text-zinc-400">
+									{c.description.trim() || '查看专题正文与相关收录。'}
+								</p>
+								<p class="mt-3 text-xs font-medium text-amber-800 dark:text-amber-400">
+									进入专题 →
+								</p>
+							</a>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p class="mt-10 rounded-xl border border-dashed border-zinc-300 px-6 py-10 text-center text-sm text-zinc-500 dark:border-zinc-600">
+					暂无专题内容。
+				</p>
+			)
+		}
+	</div>
+</BaseLayout>

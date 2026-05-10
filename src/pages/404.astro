@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = '404 · 页面未找到';
+const description = '请求的页面不存在或已下线。';
+const path = '/404.html';
+---
+
+<BaseLayout title={title} description={description} path={path}>
+	<div class="py-24 text-center">
+		<h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-50">404</h1>
+		<p class="mt-4 text-zinc-600 dark:text-zinc-400">{description}</p>
+		<p class="mt-8">
+			<a href="/" class="font-medium text-amber-700 hover:underline dark:text-amber-400">返回首页</a>
+		</p>
+	</div>
+</BaseLayout>

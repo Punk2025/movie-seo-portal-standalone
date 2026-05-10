@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+
+const title = `关于我们 | ${SITE_DISPLAY_NAME}`;
+const description =
+	'了解本站定位：影视内容介绍与资讯聚合，便于浏览与发现作品，不提供正片点播与存储。';
+const path = paths.about();
+---
+
+<BaseLayout title={title} description={description} path={path}>
+	<article class="mx-auto max-w-3xl space-y-6 py-10 text-zinc-700 dark:text-zinc-300">
+		<h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-50">关于我们</h1>
+		<p class="leading-relaxed">
+			本站为<strong>影视资讯与阅读门户</strong>，聚合影片基础信息、剧情简介、标签与演员，以及便于参考的影评摘录，
+			帮助读者了解作品与选片。
+		</p>
+		<p class="leading-relaxed">
+			本站<strong>不存储、不传播、不提供</strong>影视正片资源、磁力链接或破解工具；不替代版权方或正版播出平台。若您需观看正片，请前往各平台或权利人指定渠道。
+		</p>
+		<p class="leading-relaxed">
+			正文与栏目信息由合作方数据与公开资料整理，我们会在能力范围内保持更新；具体时效见
+			<a href={paths.publication()} class="text-amber-700 hover:underline dark:text-amber-400">
+				《发布与更新说明》
+			</a>。
+		</p>
+		<p class="leading-relaxed text-sm text-zinc-500 dark:text-zinc-400">
+			商业合作、内容纠错或侵权投诉，请参阅
+			<a href={paths.contact()} class="text-amber-700 hover:underline dark:text-amber-400">
+				联系我们
+			</a>。
+		</p>
+	</article>
+</BaseLayout>

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+	<title>影视门户</title>
+	<defs>
+		<linearGradient id="portal-grad" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#fbbf24"/>
+			<stop offset="1" stop-color="#ea580c"/>
+		</linearGradient>
+		<linearGradient id="portal-grad-dark" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#d97706"/>
+			<stop offset="1" stop-color="#9a3412"/>
+		</linearGradient>
+	</defs>
+	<rect class="portal-bg" width="32" height="32" rx="8" fill="url(#portal-grad)"/>
+	<!-- 胶片顶条 -->
+	<rect class="portal-mark" x="8" y="9" width="16" height="3.25" rx="1.2"/>
+	<!-- 取景框 -->
+	<rect class="portal-frame" x="7.5" y="13.25" width="17" height="11" rx="2"/>
+	<!-- 播放 -->
+	<path class="portal-mark" d="M13.6 16.2 13.6 21.5 18.55 18.85z"/>
+	<style>
+		.portal-bg {
+			fill: url(#portal-grad);
+		}
+		.portal-mark {
+			fill: #fffef7;
+		}
+		.portal-frame {
+			fill: none;
+			stroke: #fffef7;
+			stroke-width: 1.35;
+		}
+		@media (prefers-color-scheme: dark) {
+			.portal-bg {
+				fill: url(#portal-grad-dark);
+			}
+			.portal-mark {
+				fill: #fff8ec;
+			}
+			.portal-frame {
+				stroke: #fff8ec;
+			}
+		}
+	</style>
+</svg>

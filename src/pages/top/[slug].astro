@@ -1,0 +1,131 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MovieCard from '../../components/MovieCard.astro';
+import { getMoviesByTag, getTopMovies } from '../../data/mock';
+import { isTopSlug, TOP_SLUGS, topSlugTitle } from '../../data/themeHub';
+import {
+	getNiuniuClientFromEnv,
+	getNiuniuDiscoveryPool,
+	isNiuniuConfigured,
+	topListEmptyHint,
+	topMoviesFromPool,
+} from '../../data/niuniu-build';
+import { paths } from '../../lib/paths';
+import { SITE_DISPLAY_NAME } from '../../lib/site-brand';
+import { HOME_COLUMN_TOP_BLOCK } from '../../lib/column-seo-copy';
+
+export function getStaticPaths() {
+	return TOP_SLUGS.map((slug) => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+
+if (!slug || !isTopSlug(slug)) {
+	return Astro.redirect('/404');
+}
+
+const label = topSlugTitle(slug);
+
+let list: import('../../types/content').Movie[];
+
+if (isNiuniuConfigured()) {
+	try {
+		const cfg = getNiuniuClientFromEnv();
+		const pool = await getNiuniuDiscoveryPool(cfg);
+		list = topMoviesFromPool(slug, pool);
+	} catch {
+		list = [];
+	}
+} else {
+	list = getTopMovies(slug);
+}
+
+const title = `${label} · 榜单 | ${SITE_DISPLAY_NAME}`;
+
+const description = `${label}：按热度与评分整理的片单，内链至详情与类型页。`;
+const path = paths.top(slug);
+
+const firstTag =
+	slug === 'netflix'
+		? 'netflix'
+		: slug === 'suspense'
+			? 'suspense'
+			: slug === '2026-drama' || slug === 'drama-2026'
+				? 'drama'
+				: null;
+
+let relatedTags: import('../../types/content').Movie[] = [];
+if (isNiuniuConfigured()) {
+	relatedTags = list.slice(0, 3);
+} else {
+	relatedTags =
+		firstTag === 'drama'
+			? getMoviesByTag('drama').slice(0, 3)
+			: firstTag
+				? getMoviesByTag(firstTag).slice(0, 3)
+				: [];
+}
+
+const itemListJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'ItemList',
+	name: title,
+	numberOfItems: list.length,
+	itemListElement: list.map((m, i) => ({
+		'@type': 'ListItem',
+		position: i + 1,
+		url: new URL(paths.movie(m.slug), Astro.site).href,
+		name: m.title,
+	})),
+};
+---
+
+<BaseLayout title={title} description={description} path={path} jsonLd={itemListJsonLd}>
+	<div class="py-10">
+		<section class="mb-8 rounded-xl border border-zinc-200 bg-white px-4 py-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/60">
+			<h2 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+				{HOME_COLUMN_TOP_BLOCK.h2}
+			</h2>
+			<p class="mt-3 max-w-3xl leading-relaxed text-zinc-700 dark:text-zinc-300">{HOME_COLUMN_TOP_BLOCK.p}</p>
+		</section>
+		<h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-50">{label}</h1>
+		<p class="mt-3 max-w-3xl text-zinc-600 dark:text-zinc-400">{description}</p>
+		{
+			firstTag && (
+				<p class="mt-4 text-sm">
+					<span class="text-zinc-500">相关标签：</span>
+					<a href={paths.tag(firstTag)} class="text-amber-700 hover:underline dark:text-amber-400">
+						/{firstTag}
+					</a>
+				</p>
+			)
+		}
+	</div>
+
+	{
+		list.length > 0 ? (
+			<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				{list.map((m) => (
+					<MovieCard movie={m} />
+				))}
+			</div>
+		) : (
+			<p class="rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 py-6 text-sm leading-relaxed text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-400">
+				{isNiuniuConfigured() ? topListEmptyHint(slug) : '本榜暂时为空，欢迎返回首页看看其他推荐。'}
+			</p>
+		)
+	}
+
+	{
+		relatedTags.length > 0 && (
+			<section class="mt-14 space-y-4">
+				<h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50">相关推荐</h2>
+				<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+					{relatedTags.map((m) => (
+						<MovieCard movie={m} />
+					))}
+				</div>
+			</section>
+		)
+	}
+</BaseLayout>

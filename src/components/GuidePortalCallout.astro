@@ -1,0 +1,76 @@
+---
+/**
+ * 栏目页底部区块：`public/guide-qr.png`（设计稿二维码）+ 直达网址。
+ * 默认落地 `https://dydh.m8ktv.top/`；可用 `PUBLIC_GUIDE_PORTAL_*` 覆盖。
+ */
+interface Props {
+	eyebrow?: string;
+	title?: string;
+	intro?: string;
+}
+
+const {
+	eyebrow = '进阶入口',
+	title = '扫码或访问合作导航',
+	intro = '若您需要更完整的片单整理与观看路径说明，可通过下方方式前往合作方页面；观看正片请选择版权方或授权平台。',
+} = Astro.props;
+
+/** 与物料二维码指向一致；可用环境变量覆盖为预发 / 其它落地页 */
+const DEFAULT_GUIDE_URL = 'https://dydh.m8ktv.top/';
+const portalUrl =
+	(import.meta.env.PUBLIC_GUIDE_PORTAL_URL ?? '').toString().trim() || DEFAULT_GUIDE_URL;
+const portalLabel =
+	(import.meta.env.PUBLIC_GUIDE_PORTAL_LABEL ?? '').toString().trim() || 'dydh.m8ktv.top';
+---
+
+<section
+	class="mt-12 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-orange-50/60 p-6 shadow-sm dark:border-amber-500/30 dark:from-amber-950/35 dark:to-zinc-900/80"
+	aria-labelledby="guide-portal-callout-title"
+>
+	<p class="text-xs font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-400/90">
+		{eyebrow}
+	</p>
+	<h2 id="guide-portal-callout-title" class="mt-2 text-xl font-bold text-zinc-900 dark:text-zinc-50">
+		{title}
+	</h2>
+	<p class="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+		{intro}
+	</p>
+
+	<div class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-10">
+		<div class="flex shrink-0 flex-col items-center sm:items-start">
+			<div
+				class="overflow-hidden rounded-xl border border-amber-200/90 bg-white shadow-md shadow-amber-900/10 ring-2 ring-amber-100/90 dark:border-amber-600/40 dark:bg-zinc-900 dark:ring-amber-900/50"
+			>
+				<img
+					src="/guide-qr.png"
+					width="176"
+					height="176"
+					class="h-44 w-44 object-cover"
+					loading="lazy"
+					decoding="async"
+					alt={`扫码访问 ${portalLabel}`}
+				/>
+			</div>
+			<p class="mt-2 max-w-[11rem] text-center text-xs text-zinc-500 dark:text-zinc-400 sm:text-left">
+				扫码获取完整影视推荐
+			</p>
+		</div>
+		<div class="min-w-0 flex-1 space-y-3">
+			<p class="text-sm text-zinc-700 dark:text-zinc-300">
+				<span class="font-medium text-zinc-800 dark:text-zinc-200">直达：</span>
+				<a
+					href={portalUrl}
+					target="_blank"
+					rel="noopener noreferrer nofollow"
+					class="break-all font-semibold text-amber-800 underline-offset-2 hover:underline dark:text-amber-400"
+				>
+					{portalLabel}
+				</a>
+			</p>
+			<p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-500">
+				本站不存储正片，外链指向第三方页面时请自行甄别版权与安全性；未成年人请在监护人指导下使用网络。
+			</p>
+		</div>
+	</div>
+</section>

@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import GuidePortalCallout from '../components/GuidePortalCallout.astro';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+
+const title = `影视导航 · 栏目与找片路径 | ${SITE_DISPLAY_NAME}`;
+const description =
+	'按榜单、标签、演员与搜索在本站浏览影片资讯的路径说明；正文仍以详情页为主，商业导航入口独立呈现。';
+const path = paths.movieNav();
+
+const jsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'Article',
+	headline: '影视导航：栏目与找片路径',
+	description,
+};
+---
+
+<BaseLayout title={title} description={description} path={path} jsonLd={jsonLd}>
+	<article class="mx-auto max-w-3xl space-y-8 py-10">
+		<header class="space-y-3">
+			<h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">影视导航</h1>
+			<p class="text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
+				本页说明<strong>如何在站内按主题与人物发现影片资讯</strong>，与单片的剧情长文、看点分析相互补充；不包含正片播放。
+			</p>
+		</header>
+
+		<section class="space-y-4 text-zinc-700 dark:text-zinc-300" aria-labelledby="mn-s1">
+			<h2 id="mn-s1" class="text-xl font-bold text-zinc-900 dark:text-zinc-50">首页与榜单</h2>
+			<p class="leading-relaxed">
+				首页聚合「今日更新」「热门」以及若干主题榜单（如类型榜、平台向榜单）。榜单条目均链接到对应影片详情页，便于从「热度与主题」切入浏览。
+			</p>
+		</section>
+
+		<section class="space-y-4 text-zinc-700 dark:text-zinc-300" aria-labelledby="mn-s2">
+			<h2 id="mn-s2" class="text-xl font-bold text-zinc-900 dark:text-zinc-50">标签与演员</h2>
+			<p class="leading-relaxed">
+				在详情页中点击类型标签或演员姓名，可进入标签页、演员页，浏览同标签或同演员下的其它作品资讯。适合按偏好延伸阅读。
+			</p>
+		</section>
+
+		<section class="space-y-4 text-zinc-700 dark:text-zinc-300" aria-labelledby="mn-s3">
+			<h2 id="mn-s3" class="text-xl font-bold text-zinc-900 dark:text-zinc-50">搜索</h2>
+			<p class="leading-relaxed">
+				使用站点右上角的「搜影片」可在浮层中按片名或关键词筛选；若有观看指引，将在浮层内一并展示。
+			</p>
+		</section>
+
+		<GuidePortalCallout
+			eyebrow="外部导航"
+			title="合作方影视导航"
+			intro="若您习惯使用合作方整理的专题导航或片单服务，可通过下方入口前往；请自行确认页面安全性与版权合规性。"
+		/>
+	</article>
+</BaseLayout>

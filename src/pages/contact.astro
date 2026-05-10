@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+
+const title = `联系我们 | ${SITE_DISPLAY_NAME}`;
+const description = '站点反馈、商务合作、侵权与纠错联系方式（请替换为您主体的真实信息）。';
+const path = paths.contact();
+---
+
+<BaseLayout title={title} description={description} path={path}>
+	<article class="mx-auto max-w-3xl space-y-6 py-10 text-zinc-700 dark:text-zinc-300">
+		<h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-50">联系我们</h1>
+		<p class="leading-relaxed">
+			如您在使用本站过程中遇到问题，或希望对条目内容提出<strong>纠错、更新建议</strong>，欢迎通过下列方式联络（以下为占位示例，上线前请替换为真实邮箱、工单或企业微信等）。
+		</p>
+		<ul class="list-inside list-disc space-y-2 leading-relaxed">
+			<li>
+				<strong>通用咨询：</strong>
+				<a
+					href="mailto:hello@example.com"
+					class="text-amber-700 hover:underline dark:text-amber-400"
+				>
+					hello@example.com
+				</a>
+				（请替换）
+			</li>
+			<li>
+				<strong>侵权与删除请求：</strong>
+				<a
+					href="mailto:legal@example.com"
+					class="text-amber-700 hover:underline dark:text-amber-400"
+				>
+					legal@example.com
+				</a>
+				，请在邮件中说明权利依据、作品名称、对应 URL 与证明材料摘要。
+			</li>
+			<li>
+				<strong>商务合作：</strong>
+				<a href="mailto:biz@example.com" class="text-amber-700 hover:underline dark:text-amber-400">
+					biz@example.com
+				</a>
+			</li>
+		</ul>
+		<p class="leading-relaxed text-sm text-zinc-500 dark:text-zinc-400">
+			我们力争在合理工作日内回复；涉及法律程序的请求，请同时说明管辖与送达方式。更多规则见
+			<a href={paths.disclaimer()} class="text-amber-700 hover:underline dark:text-amber-400">
+				免责声明
+			</a>
+			与
+			<a href={paths.terms()} class="text-amber-700 hover:underline dark:text-amber-400">
+				服务条款
+			</a>。
+		</p>
+	</article>
+</BaseLayout>

@@ -1,0 +1,176 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MovieCard from '../../components/MovieCard.astro';
+import { movies as mockMovies } from '../../data/mock';
+import { getTopicLandingFromJson } from '../../data/topic-json-files';
+import {
+	allTopicSlugsForStaticPaths,
+	getTopicLandingConfig,
+	type TopicLandingConfig,
+} from '../../data/topic-landings';
+import {
+	getNiuniuClientFromEnv,
+	getNiuniuDiscoveryPool,
+	isNiuniuConfigured,
+	moviesMatchingKeywordsFromPool,
+} from '../../data/niuniu-build';
+import { fetchAllSeoTopicSlugs, fetchSeoTopicLanding } from '../../lib/niuniucms-api';
+import {
+	mapNiuniuSeoTopicToLandingConfig,
+	mergeTopicLandingConfig,
+} from '../../lib/seo-topic-mapper';
+import { paths } from '../../lib/paths';
+import { SITE_DISPLAY_NAME } from '../../lib/site-brand';
+import type { Movie } from '../../types/content';
+
+export async function getStaticPaths() {
+	const staticSlugs = allTopicSlugsForStaticPaths();
+	let remoteTopicSlugs: string[] = [];
+	if (isNiuniuConfigured()) {
+		try {
+			const client = getNiuniuClientFromEnv();
+			remoteTopicSlugs = await fetchAllSeoTopicSlugs(client);
+		} catch {
+			/* 列表接口未上线或路由与线不一致时仅用内置 / 环境变量 slug */
+		}
+	}
+	const merged = [...new Set([...remoteTopicSlugs, ...staticSlugs])];
+	return merged.map((slug) => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+const staticCfg = slug ? getTopicLandingConfig(slug) : undefined;
+const jsonCfg = slug ? getTopicLandingFromJson(slug) : undefined;
+/** JSON 专题优先于 `topic-landings` 手写表；再与 CMS `mergeTopicLandingConfig` 合并 */
+const localBase: TopicLandingConfig | undefined = jsonCfg
+	? mergeTopicLandingConfig(jsonCfg, staticCfg)
+	: staticCfg;
+
+let cfg: TopicLandingConfig | undefined;
+
+if (slug && isNiuniuConfigured()) {
+	try {
+		const client = getNiuniuClientFromEnv();
+		const dto = await fetchSeoTopicLanding(client, slug);
+		if (dto) {
+			const mapped = mapNiuniuSeoTopicToLandingConfig(dto, slug);
+			if (mapped === null) {
+				return Astro.redirect('/404');
+			}
+			cfg = mergeTopicLandingConfig(mapped, localBase);
+		}
+	} catch {
+		/* 接口未部署或路径不一致时用静态回退 */
+	}
+}
+
+if (!cfg && localBase) {
+	cfg = localBase;
+}
+
+if (!slug || !cfg) {
+	return Astro.redirect('/404');
+}
+
+let list: Movie[] = [];
+
+if (isNiuniuConfigured()) {
+	try {
+		const c = getNiuniuClientFromEnv();
+		const pool = await getNiuniuDiscoveryPool(c);
+		list = moviesMatchingKeywordsFromPool(pool, cfg.matchKeywords);
+	} catch {
+		list = [];
+	}
+} else {
+	list = moviesMatchingKeywordsFromPool(mockMovies, cfg.matchKeywords);
+}
+
+const TOPIC_GRID_PREVIEW = 6;
+
+const title = `${cfg.pageTitle} | ${SITE_DISPLAY_NAME}`;
+const description = cfg.metaDescription;
+const path = paths.topic(slug);
+
+const articleJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'Article',
+	headline: cfg.pageTitle,
+	description: cfg.metaDescription,
+	url: new URL(path, Astro.site).href,
+};
+
+const itemListJsonLd =
+	list.length > 0
+		? {
+				'@context': 'https://schema.org',
+				'@type': 'ItemList',
+				name: `${cfg.pageTitle} · 相关收录`,
+				numberOfItems: list.length,
+				itemListElement: list.map((m, i) => ({
+					'@type': 'ListItem',
+					position: i + 1,
+					url: new URL(paths.movie(m.slug), Astro.site).href,
+					name: m.title,
+				})),
+			}
+		: null;
+
+const mergedJsonLd = itemListJsonLd ? [articleJsonLd, itemListJsonLd] : articleJsonLd;
+---
+
+<BaseLayout title={title} description={description} path={path} jsonLd={mergedJsonLd}>
+	<article class="py-10">
+		<p class="text-sm text-zinc-500 dark:text-zinc-400">
+			<a href={paths.home()} class="text-amber-700 hover:underline dark:text-amber-400">首页</a>
+			<span class="mx-1 text-zinc-400">/</span>
+			<span class="text-zinc-600 dark:text-zinc-300">专题</span>
+		</p>
+		<h1 class="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+			{cfg.pageTitle}
+		</h1>
+
+		<div class="prose prose-zinc mt-8 max-w-3xl dark:prose-invert">
+			{cfg.bodyParagraphs.map((p) => (
+				<p class="leading-relaxed text-zinc-700 dark:text-zinc-300">{p}</p>
+			))}
+		</div>
+
+		{
+			cfg.matchKeywords.length > 0 ? (
+				<section class="mt-14" aria-labelledby="topic-pool-title">
+					<h2 id="topic-pool-title" class="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+						站内相关收录
+					</h2>
+					<p class="mt-2 max-w-3xl text-sm text-zinc-600 dark:text-zinc-400">
+						相关关键词：{cfg.matchKeywords.slice(0, 8).join('、')}
+						{cfg.matchKeywords.length > 8 ? '…' : ''}
+					</p>
+					{list.length > 0 ? (
+						<div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+							{list.slice(0, TOPIC_GRID_PREVIEW).map((m) => (
+								<MovieCard movie={m} />
+							))}
+							{list.length > TOPIC_GRID_PREVIEW ? (
+								<details class="col-span-full rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/40">
+									<summary class="cursor-pointer text-sm font-semibold text-amber-800 dark:text-amber-400">
+										展开其余 {list.length - TOPIC_GRID_PREVIEW} 条
+									</summary>
+									<div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+										{list.slice(TOPIC_GRID_PREVIEW).map((m) => (
+											<MovieCard movie={m} />
+										))}
+									</div>
+								</details>
+							) : null}
+						</div>
+					) : (
+						<p class="mt-6 rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 py-5 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-400">
+							暂无相关收录。
+						</p>
+					)}
+				</section>
+			) : null
+		}
+	</article>
+</BaseLayout>

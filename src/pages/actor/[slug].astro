@@ -1,0 +1,101 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MovieCard from '../../components/MovieCard.astro';
+import { getAllActors, getMoviesByActor } from '../../data/mock';
+import {
+	getNiuniuClientFromEnv,
+	getNiuniuDiscoveryPool,
+	isNiuniuConfigured,
+	moviesByActorSlugFromPool,
+	uniqueActorsFromMovies,
+} from '../../data/niuniu-build';
+import { paths } from '../../lib/paths';
+import { HOME_COLUMN_TOP_BLOCK } from '../../lib/column-seo-copy';
+
+export async function getStaticPaths() {
+	if (isNiuniuConfigured()) {
+		try {
+			const cfg = getNiuniuClientFromEnv();
+			const pool = await getNiuniuDiscoveryPool(cfg);
+			const actors = uniqueActorsFromMovies(pool);
+			return actors.map((a) => ({ params: { slug: a.slug } }));
+		} catch {
+			return [];
+		}
+	}
+
+	return getAllActors().map((a) => ({ params: { slug: a.slug } }));
+}
+
+const { slug } = Astro.params;
+
+if (!slug) {
+	return Astro.redirect('/404');
+}
+
+let actor: { name: string; slug: string } | undefined;
+let list: import('../../types/content').Movie[] = [];
+
+if (isNiuniuConfigured()) {
+	try {
+		const cfg = getNiuniuClientFromEnv();
+		const pool = await getNiuniuDiscoveryPool(cfg);
+		const actors = uniqueActorsFromMovies(pool);
+		actor = actors.find((a) => a.slug === slug);
+		list = actor ? moviesByActorSlugFromPool(pool, actor.slug) : [];
+	} catch {
+		actor = undefined;
+	}
+} else {
+	const actors = getAllActors();
+	actor = actors.find((a) => a.slug === slug);
+	list = actor ? getMoviesByActor(actor.slug) : [];
+}
+
+if (!actor) {
+	return Astro.redirect('/404');
+}
+
+const title = `${actor.name} · 影视作品聚合`;
+const description = `${actor.name} 的代表作品与参演片单，涵盖电影、电视剧及奈飞等平台热门条目，便于按演员浏览选片。`;
+const path = paths.actor(actor.slug);
+
+const itemListJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'ItemList',
+	name: title,
+	numberOfItems: list.length,
+	itemListElement: list.map((m, i) => ({
+		'@type': 'ListItem',
+		position: i + 1,
+		url: new URL(paths.movie(m.slug), Astro.site).href,
+		name: m.title,
+	})),
+};
+
+const personJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'Person',
+	name: actor.name,
+	url: new URL(path, Astro.site).href,
+};
+---
+
+<BaseLayout title={title} description={description} path={path} jsonLd={[personJsonLd, itemListJsonLd]}>
+	<div class="py-10">
+		<section class="mb-8 rounded-xl border border-zinc-200 bg-white px-4 py-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/60">
+			<h2 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+				{HOME_COLUMN_TOP_BLOCK.h2}
+			</h2>
+			<p class="mt-3 max-w-3xl leading-relaxed text-zinc-700 dark:text-zinc-300">{HOME_COLUMN_TOP_BLOCK.p}</p>
+		</section>
+		<h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-50">{actor.name} · 影视作品与代表片单</h1>
+		<p class="mt-3 max-w-3xl text-zinc-600 dark:text-zinc-400">{description}</p>
+	</div>
+
+	<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+		{list.map((m) => (
+			<MovieCard movie={m} />
+		))}
+	</div>
+</BaseLayout>

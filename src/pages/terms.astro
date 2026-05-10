@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+
+const title = `服务条款 | ${SITE_DISPLAY_NAME}`;
+const description = '使用本站需遵守的规则与责任边界（概要条款）。';
+const path = paths.terms();
+---
+
+<BaseLayout title={title} description={description} path={path}>
+	<article class="mx-auto max-w-3xl space-y-6 py-10 text-zinc-700 dark:text-zinc-300">
+		<h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-50">服务条款</h1>
+		<p class="leading-relaxed">
+			欢迎使用本站。访问网站即表示您已阅读并同意下列条款；若不同意，请停止使用。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">1. 服务性质</h2>
+		<p class="leading-relaxed">
+			本站提供影视相关<strong>信息展示与阅读</strong>，不构成对任意第三方内容的担保。内容来源于合作数据或人工编排，可能存在延迟或误差。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">2. 使用限制</h2>
+		<ul class="list-inside list-disc space-y-2 leading-relaxed">
+			<li>不得以自动化手段过度抓取对服务器造成不合理负载（请遵守 robots 与合理频率）。</li>
+			<li>不得利用本站传播违法、侵权或恶意软件；不得攻击或破坏本站与关联系统。</li>
+			<li>转载或引用本站摘要时，请注明来源并遵守原作者与权利人规则。</li>
+		</ul>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">3. 知识产权</h2>
+		<p class="leading-relaxed">
+			本站版式、汇编方式与原创文案受适用法律保护。影片海报、剧照等素材版权归原作者与授权方所有；如有侵权请按
+			<a href={paths.contact()} class="text-amber-700 hover:underline dark:text-amber-400">
+				联系我们
+			</a>
+			指引发起通知。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">4. 责任限制</h2>
+		<p class="leading-relaxed">
+			在法律允许范围内，本站对因使用或无法使用本站而产生的间接或后果性损失不承担责任。详细免责见
+			<a href={paths.disclaimer()} class="text-amber-700 hover:underline dark:text-amber-400">
+				免责声明
+			</a>。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">5. 条款变更</h2>
+		<p class="leading-relaxed">
+			我们可能更新本条款；更新后继续使用即视为接受新版本。正文以本站发布页为准。
+		</p>
+	</article>
+</BaseLayout>

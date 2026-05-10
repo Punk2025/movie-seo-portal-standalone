@@ -1,0 +1,456 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PortalCtaRuntime from '../../components/PortalCtaRuntime.astro';
+import MovieCard from '../../components/MovieCard.astro';
+import {
+	findReviewForMovie,
+	getMovieBySlug,
+	getMoviesBySlug,
+	getUpdatesForMovie,
+	movies,
+} from '../../data/mock';
+import {
+	collectMovieSlugsForBuild,
+	getNiuniuClientFromEnv,
+	isNiuniuConfigured,
+	loadMovieFromNiuniu,
+	loadRelatedMovies,
+} from '../../data/niuniu-build';
+import { paths } from '../../lib/paths';
+import { SITE_DISPLAY_NAME } from '../../lib/site-brand';
+import type { Movie } from '../../types/content';
+
+export async function getStaticPaths() {
+	if (isNiuniuConfigured()) {
+		try {
+			const cfg = getNiuniuClientFromEnv();
+			const slugs = await collectMovieSlugsForBuild(cfg);
+			return slugs.map((slug) => ({ params: { slug } }));
+		} catch {
+			return [];
+		}
+	}
+
+	return movies.map((m) => ({ params: { slug: m.slug } }));
+}
+
+const { slug } = Astro.params;
+
+let movie: Movie | undefined;
+
+if (slug && isNiuniuConfigured()) {
+	const cfg = getNiuniuClientFromEnv();
+	movie = await loadMovieFromNiuniu(cfg, slug);
+} else if (slug) {
+	movie = getMovieBySlug(slug);
+}
+
+if (!movie) {
+	return Astro.redirect('/404');
+}
+
+const useNiuniu = isNiuniuConfigured();
+const cfg = useNiuniu ? getNiuniuClientFromEnv() : null;
+const runtimeApiBase = (import.meta.env.PUBLIC_RUNTIME_API_BASE ?? '').toString().trim();
+
+const related = useNiuniu && cfg
+	? await loadRelatedMovies(cfg, movie.related_movies)
+	: getMoviesBySlug(movie.related_movies);
+
+const actorSlugs = new Set(movie.actors.map((a) => a.slug));
+const sameActor = useNiuniu
+	? ([] as Movie[])
+	: movies.filter(
+			(m) => m.slug !== movie.slug && m.actors.some((a) => actorSlugs.has(a.slug)),
+		);
+
+const primaryTag = movie.tags[0];
+const sameTag = useNiuniu
+	? ([] as Movie[])
+	: primaryTag
+		? movies.filter(
+				(m) => m.slug !== movie.slug && m.tags.some((t) => t.slug === primaryTag.slug),
+			)
+		: [];
+
+const reviewPage = useNiuniu ? undefined : findReviewForMovie(movie.slug);
+const movieUpdates = useNiuniu ? [] : getUpdatesForMovie(movie.slug);
+
+function moviePageH1(m: Movie): string {
+	const s = m.seoTitle?.trim();
+	if (s && s.length >= 6 && s.length <= 72) return s;
+	return `${m.title}全集免费在线观看`;
+}
+
+function movieLeadParagraph(m: Movie): string {
+	const sd = m.seoDescription?.trim();
+	if (sd && sd.length >= 24) return sd.length > 420 ? `${sd.slice(0, 420)}…` : sd;
+	const d = m.description.trim();
+	if (!d || d === '（暂无简介）') {
+		return `《${m.title}》${m.year ? `于${m.year}年` : ''}与观众见面，汇集剧情发展、主创阵容与观众讨论，适合想了解故事背景与观赏亮点的读者。`;
+	}
+	const firstPara = d.split(/\n+/).find((x) => x.trim())?.trim() ?? d;
+	if (firstPara.length >= 30) return firstPara.length > 450 ? `${firstPara.slice(0, 450)}…` : firstPara;
+	return `《${m.title}》${m.year ? `${m.year}年` : ''}作品。${d.length > 400 ? `${d.slice(0, 400)}…` : d}`;
+}
+
+function movieActorIntroProse(m: Movie): string {
+	const names = m.actors.map((a) => a.name);
+	if (names.length === 0) return `《${m.title}》主要演员与配角信息可在正片或通过官方片单进一步查阅。`;
+	const head = names.slice(0, 10).join('、');
+	const more = names.length > 10 ? `等，全片共收录${names.length}位演员信息` : '等加盟本片';
+	return `《${m.title}》由${head}${more}。点击下方姓名可浏览其更多参演作品与类型标签。`;
+}
+
+function movieInsightAnalysis(m: Movie): string {
+	const ai = (m.ai_review ?? '').trim();
+	if (ai) return ai;
+	const tagText = m.tags.map((t) => t.name).slice(0, 6).join('、') || '多元类型';
+	const act = m.actors
+		.slice(0, 4)
+		.map((a) => a.name)
+		.join('、');
+	const dir = m.director?.trim();
+	let out = `《${m.title}》在叙事与节奏上适合关注人物冲突与情节推进的观众。`;
+	if (dir) out += `导演${dir}的整体把控决定了作品气质。`;
+	if (act) out += `${act}等主演的对手戏与代入感是观赏重点之一。`;
+	out += `类型标签涵盖「${tagText}」，若您平日喜爱相近题材，可将本片加入待看清单。`;
+	return out;
+}
+
+function movieRecommendReason(m: Movie): string {
+	const raw = (m.ai_recommend_reason ?? '').trim();
+	if (raw) return raw;
+	const tags = m.tags.map((t) => t.name).slice(0, 4).join('、') || '多元题材';
+	const sc = m.score != null ? `口碑评分约 ${m.score}，` : '';
+	return `《${m.title}》${m.year ? `${m.year}年` : ''}上线以来讨论度较高，${sc}适合关注「${tags}」等取向的观众列入待看。若你偏好强剧情推进或话题作品，本片值得优先安排观影时间。`;
+}
+
+const pageH1 = moviePageH1(movie);
+const leadParagraph = movieLeadParagraph(movie);
+const actorIntroProse = movieActorIntroProse(movie);
+const insightBody = movieInsightAnalysis(movie);
+const recommendBody = movieRecommendReason(movie);
+const spotlightBody = (movie.ai_spotlight ?? '').trim() || insightBody;
+const actorProseBody = (movie.ai_actor_notes ?? '').trim() || actorIntroProse;
+const relatedIntroBody =
+	(movie.related_intro ?? '').trim() ||
+	`根据类型、热度与关联片单，为您挑选与《${movie.title}》风格或题材相近的其它作品，便于延伸观看与对比阅读。`;
+
+const displayTitle =
+	(movie.seoTitle?.trim() && movie.seoTitle.length <= 60
+		? movie.seoTitle.trim()
+		: `${pageH1.slice(0, 50)}`) + ` | ${SITE_DISPLAY_NAME}`;
+const displayDescription =
+	movie.seoDescription?.trim() ||
+	`${movie.title}：${leadParagraph.slice(0, 140)}${leadParagraph.length > 140 ? '…' : ''}`;
+const path = paths.movie(movie.slug);
+
+function formatPageDate(raw: string): string {
+	const d = new Date(raw);
+	if (!Number.isNaN(d.getTime())) {
+		return d.toLocaleString('zh-CN', {
+			year: 'numeric',
+			month: 'long',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+		});
+	}
+	return raw;
+}
+const pageDateDisplay = formatPageDate(movie.publish_time);
+
+const movieJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'Movie',
+	name: movie.title,
+	image: movie.cover,
+	datePublished: movie.publish_time,
+	description: movie.description,
+	countryOfOrigin: movie.country,
+	director: { '@type': 'Person', name: movie.director },
+};
+
+const articleJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'Article',
+	headline: pageH1,
+	description: leadParagraph.slice(0, 320),
+	image: movie.cover ? [movie.cover] : undefined,
+};
+
+const breadcrumbJsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'BreadcrumbList',
+	itemListElement: [
+		{
+			'@type': 'ListItem',
+			position: 1,
+			name: '首页',
+			item: new URL('/', Astro.site).href,
+		},
+		{
+			'@type': 'ListItem',
+			position: 2,
+			name: movie.title,
+			item: new URL(path, Astro.site).href,
+		},
+	],
+};
+---
+
+<BaseLayout
+	title={displayTitle}
+	description={displayDescription}
+	path={path}
+	ogImage={movie.cover}
+	ogImageAlt={`${movie.title} 海报`}
+	ogType="video.movie"
+	jsonLd={[movieJsonLd, articleJsonLd, breadcrumbJsonLd]}
+>
+	<article class="py-10" itemscope itemtype="https://schema.org/Movie">
+		<meta itemprop="name" content={movie.title} />
+		<header class="max-w-4xl space-y-4">
+			<h1 class="text-2xl font-bold leading-snug text-zinc-900 dark:text-zinc-50 sm:text-3xl">{pageH1}</h1>
+			<p class="text-base leading-relaxed text-zinc-700 dark:text-zinc-300 sm:text-lg">{leadParagraph}</p>
+			<div class="flex flex-wrap items-center gap-2 pt-1">
+				<a
+					href={paths.movieNav()}
+					class="inline-flex items-center gap-2 rounded-full border border-amber-300/90 bg-amber-50/90 px-4 py-2 text-sm font-semibold text-amber-900 shadow-sm ring-1 ring-amber-200/60 transition hover:border-amber-400 hover:bg-amber-100/90 hover:shadow dark:border-amber-500/45 dark:bg-amber-950/45 dark:text-amber-200 dark:ring-amber-500/25 dark:hover:bg-amber-950/65"
+				>
+					<svg class="h-4 w-4 shrink-0 opacity-90" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path
+							d="M12 3 4 21l8-4 8 4-8-18Z"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linejoin="round"></path>
+						<path d="M12 9v6M9 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+					</svg>
+					影视导航
+				</a>
+			</div>
+		</header>
+
+		<div class="mt-10 flex flex-col gap-8 md:flex-row">
+			<img
+				src={movie.cover}
+				alt={`${movie.title} 海报`}
+				width="320"
+				height="480"
+				class="mx-auto w-full max-w-xs shrink-0 rounded-lg object-cover shadow-lg md:mx-0"
+				loading="eager"
+				decoding="async"
+				itemprop="image"
+			/>
+			<div class="min-w-0 flex-1 space-y-4">
+				<p class="flex flex-wrap gap-x-4 gap-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+					<span>{movie.year}</span>
+					<span>地区 · {movie.country}</span>
+					{movie.score != null && <span>评分 · {movie.score}</span>}
+					{movie.heat != null && <span>热度 · {movie.heat}</span>}
+				</p>
+				<div class="border-t border-zinc-200 pt-3 text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+					<p>
+						<span class="font-medium text-zinc-600 dark:text-zinc-300">发布与更新：</span>
+						<time datetime={movie.publish_time}>{pageDateDisplay}</time>
+						<span class="mx-1">·</span>
+						<span>
+							信息截至页面所示时间，
+							<a href={paths.publication()} class="text-amber-700 hover:underline dark:text-amber-400">
+								发布与更新
+							</a>
+							。
+						</span>
+					</p>
+				</div>
+				<p class="text-sm text-zinc-600 dark:text-zinc-400">
+					<span class="font-medium text-zinc-800 dark:text-zinc-200">类型：</span>
+					{
+						movie.tags.map((t, i) => (
+							<>
+								{i > 0 && ' · '}
+								<a href={paths.tag(t.slug)} class="text-amber-700 hover:underline dark:text-amber-400">
+									{t.name}
+								</a>
+							</>
+						))
+					}
+				</p>
+				<p class="text-sm text-zinc-600 dark:text-zinc-400">
+					<span class="font-medium text-zinc-800 dark:text-zinc-200">导演：</span>
+					{movie.director}
+				</p>
+				<p class="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
+					<span class="font-semibold">连载与更新：</span>
+					{movie.update_status}
+				</p>
+				{
+					(useNiuniu && movie.ai_review) || reviewPage ? (
+						<div class="flex flex-wrap gap-3">
+							{useNiuniu && movie.ai_review && (
+								<a
+									href={paths.review(movie.slug)}
+									class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-amber-600 dark:hover:bg-amber-500"
+								>
+									展开完整长文
+								</a>
+							)}
+							{!useNiuniu && reviewPage && (
+								<a
+									href={paths.review(reviewPage.slug)}
+									class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-amber-600 dark:hover:bg-amber-500"
+								>
+									展开完整长文
+								</a>
+							)}
+						</div>
+					) : null
+				}
+			</div>
+		</div>
+
+		<section class="mt-12 space-y-4">
+			<h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50">推荐理由</h2>
+			<p class="leading-relaxed text-zinc-700 dark:text-zinc-300">{recommendBody}</p>
+		</section>
+
+		<section class="mt-10 space-y-4">
+			<h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50">看点分析</h2>
+			<p class="leading-relaxed text-zinc-700 dark:text-zinc-300">{spotlightBody}</p>
+			{
+				reviewPage && (
+					<p class="text-sm text-zinc-500">
+						更多解读见{' '}
+						<a href={paths.review(reviewPage.slug)} class="text-amber-700 hover:underline dark:text-amber-400">
+							长文影评页
+						</a>
+						。
+					</p>
+				)
+			}
+			{
+				useNiuniu && movie.ai_review && (
+					<p class="text-sm text-zinc-500">
+						分段阅读与长文版：{' '}
+						<a href={paths.review(movie.slug)} class="text-amber-700 hover:underline dark:text-amber-400">
+							进入影评长文
+						</a>
+					</p>
+				)
+			}
+		</section>
+
+		<section class="mt-10 space-y-4">
+			<h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50">剧情介绍</h2>
+			<p class="leading-relaxed text-zinc-700 dark:text-zinc-300">{movie.description}</p>
+		</section>
+
+		{
+			useNiuniu ? (
+				<PortalCtaRuntime slug={movie.slug} runtimeApiBase={runtimeApiBase} />
+			) : (
+				movie.portal_cta &&
+				movie.portal_cta.links.length > 0 && (
+					<section class="mt-10 space-y-4" aria-label="相关引导链接">
+						<h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50">观看与延伸阅读</h2>
+						<ul class="space-y-3">
+							{movie.portal_cta.links.map((link) => (
+								<li class="rounded-lg border border-zinc-200 bg-zinc-50/80 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/40">
+									<a
+										href={link.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="font-medium text-amber-800 hover:underline dark:text-amber-400"
+									>
+										{link.label}
+									</a>
+									{link.subtitle ? (
+										<p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{link.subtitle}</p>
+									) : null}
+								</li>
+							))}
+						</ul>
+					</section>
+				)
+			)
+		}
+
+		<section class="mt-10 space-y-4">
+			<h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50">演员介绍</h2>
+			<p class="leading-relaxed text-zinc-700 dark:text-zinc-300">{actorProseBody}</p>
+			{
+				movie.actors.length > 0 && (
+					<ul class="list-inside list-disc space-y-1 text-zinc-700 dark:text-zinc-300">
+						{movie.actors.map((a) => (
+							<li>
+								<a href={paths.actor(a.slug)} class="text-amber-700 hover:underline dark:text-amber-400">
+									{a.name}
+								</a>
+							</li>
+						))}
+					</ul>
+				)
+			}
+		</section>
+
+		<section class="mt-10 space-y-4">
+			<h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50">更新说明</h2>
+			<p class="leading-relaxed text-zinc-700 dark:text-zinc-300">{movie.update_status}</p>
+			{
+				movieUpdates.length > 0 && (
+					<ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+						{movieUpdates.map((u) => (
+							<li>
+								<a href={paths.update(u.slug)} class="text-amber-700 hover:underline dark:text-amber-400">
+									第 {u.season} 季第 {u.episode} 集更新说明 → /update/{u.slug}
+								</a>
+							</li>
+						))}
+					</ul>
+				)
+			}
+		</section>
+
+		<section class="mt-14 space-y-4">
+			<h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50">类似推荐</h2>
+			<p class="max-w-3xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{relatedIntroBody}</p>
+			<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				{related.map((m) => (
+					<MovieCard movie={m} />
+				))}
+			</div>
+		</section>
+
+		{
+			sameActor.length > 0 && (
+				<section class="mt-14 space-y-4">
+					<h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50">同演员作品</h2>
+					<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+						{sameActor.map((m) => (
+							<MovieCard movie={m} />
+						))}
+					</div>
+				</section>
+			)
+		}
+
+		{
+			primaryTag && sameTag.length > 0 && (
+				<section class="mt-14 space-y-4">
+					<h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+						同类型 ·{' '}
+						<a href={paths.tag(primaryTag.slug)} class="text-amber-700 hover:underline dark:text-amber-400">
+							{primaryTag.name}
+						</a>
+					</h2>
+					<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+						{sameTag.map((m) => (
+							<MovieCard movie={m} />
+						))}
+					</div>
+				</section>
+			)
+		}
+	</article>
+</BaseLayout>

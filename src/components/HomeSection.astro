@@ -1,0 +1,31 @@
+---
+interface Props {
+	title: string;
+	subtitle?: string;
+	/** 栏目最顶部：h2 + 段落，便于搜索引擎理解栏目主题 */
+	columnTop?: { h2: string; p: string };
+}
+
+const { title, subtitle, columnTop } = Astro.props;
+---
+
+<section class="py-8">
+	{
+		columnTop && (
+			<div class="mb-6 rounded-xl border border-zinc-200 bg-white px-4 py-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/60">
+				<h2 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{columnTop.h2}</h2>
+				<p class="mt-3 max-w-3xl leading-relaxed text-zinc-700 dark:text-zinc-300">{columnTop.p}</p>
+			</div>
+		)
+	}
+	<div class="mb-4 flex flex-wrap items-end justify-between gap-2">
+		<div>
+			<h2 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{title}</h2>
+			{subtitle && <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{subtitle}</p>}
+		</div>
+		<slot name="action" />
+	</div>
+	<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+		<slot />
+	</div>
+</section>

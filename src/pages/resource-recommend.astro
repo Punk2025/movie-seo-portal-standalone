@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import GuidePortalCallout from '../components/GuidePortalCallout.astro';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+
+const title = `资源推荐 · 合法观看与片单说明 | ${SITE_DISPLAY_NAME}`;
+const description =
+	'关于「资源」一词在本站的含义：仅指合法的观看渠道提示与阅读延伸，不提供盗版或下载；进阶推荐见独立区块。';
+const path = paths.resourceRecommend();
+
+const jsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'Article',
+	headline: '资源推荐：合法观看与片单说明',
+	description,
+};
+---
+
+<BaseLayout title={title} description={description} path={path} jsonLd={jsonLd}>
+	<article class="mx-auto max-w-3xl space-y-8 py-10">
+		<header class="space-y-3">
+			<h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">资源推荐</h1>
+			<p class="text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
+				此处「资源」指<strong>正版播出渠道线索、官方片单与延伸阅读</strong>，不包含网盘、磁力或破解资源。影片详情页仍以剧情导读、演员与标签为主；若需合作方整理的完整推荐列表，请使用页尾入口。
+			</p>
+		</header>
+
+		<section class="space-y-4 text-zinc-700 dark:text-zinc-300" aria-labelledby="rr-s1">
+			<h2 id="rr-s1" class="text-xl font-bold text-zinc-900 dark:text-zinc-50">为何单独设立本页</h2>
+			<p class="leading-relaxed">
+				将「观看路径、合作推荐」与剧情正文拆分，有利于读者区分<strong>内容阅读</strong>与<strong>外部服务入口</strong>，也更符合搜索引擎对落地页主题的期望——本页集中阐述合法观看与推荐逻辑，详情页专注影片本身。
+			</p>
+		</section>
+
+		<section class="space-y-4 text-zinc-700 dark:text-zinc-300" aria-labelledby="rr-s2">
+			<h2 id="rr-s2" class="text-xl font-bold text-zinc-900 dark:text-zinc-50">站内置顶与榜单</h2>
+			<p class="leading-relaxed">
+				您也可通过
+				<a href={paths.movieNav()} class="text-amber-700 hover:underline dark:text-amber-400">影视导航</a>
+				了解站内栏目结构；首页榜单与标签页同样可帮助您按偏好挑选下一部「待看」资讯。
+			</p>
+		</section>
+
+		<section class="space-y-4 text-zinc-700 dark:text-zinc-300" aria-labelledby="rr-s3">
+			<h2 id="rr-s3" class="text-xl font-bold text-zinc-900 dark:text-zinc-50">未成年人提示</h2>
+			<p class="leading-relaxed">
+				部分影片分级与题材并不适宜未成年人单独观看；请在监护人指导下选择播出平台与观影时间。
+			</p>
+		</section>
+
+		<GuidePortalCallout
+			eyebrow="合作推荐"
+			title="扫码获取完整影视推荐"
+			intro="合作方可能提供更完整的专题片单或观看指引。请确认链接指向 HTTPS 站点，并阅读对方用户协议与隐私政策。"
+		/>
+	</article>
+</BaseLayout>

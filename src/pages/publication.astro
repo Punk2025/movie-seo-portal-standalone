@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+
+const title = `发布与更新说明 | ${SITE_DISPLAY_NAME}`;
+const description = '本站条目时间与内容更新的一般说明。';
+const path = paths.publication();
+---
+
+<BaseLayout title={title} description={description} path={path}>
+	<article class="mx-auto max-w-3xl space-y-6 py-10 text-zinc-700 dark:text-zinc-300">
+		<h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-50">发布与更新说明</h1>
+		<p class="leading-relaxed">
+			{SITE_DISPLAY_NAME}{' '}
+			以预先生成的页面形式提供服务居多：资讯在站内成片更新的时间点会被写入页面。您看到的日期一般表示<strong>该条内容在站内最近一次刷新时的时间</strong>，与打开页面的瞬时时间可能略有差别。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">1. 影片页上的时间</h2>
+		<p class="leading-relaxed">
+			「发布与更新」所示时间通常来自合作方提供的上架时间或最近更新时间。若未提供可用时间戳，页面可能仅显示录入日期或留空。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">2. 为何有时不是最新</h2>
+		<ul class="list-inside list-disc space-y-2 leading-relaxed">
+			<li>合作方已调整条目，本站尚未完成新一轮页面刷新时，线上仍可能是旧版。</li>
+			<li>网络缓存（如 CDN、浏览器）可能短暂保留旧页面，可尝试刷新或稍后再访。</li>
+			<li>首页列表与详情页可能基于不同批次整理，极少数情况下会有短时差异。</li>
+		</ul>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">3. 影评类内容</h2>
+		<p class="leading-relaxed">
+			影评摘录在合作方就绪并同步后，会在后续刷新中出现在本站。若长期未见更新，请通过
+			<a href={paths.contact()} class="text-amber-700 hover:underline dark:text-amber-400">
+				联系我们
+			</a>
+			反馈。
+		</p>
+		<p class="leading-relaxed text-sm text-zinc-500 dark:text-zinc-400">
+			编辑与纠错流程见
+			<a href={paths.editorial()} class="text-amber-700 hover:underline dark:text-amber-400">
+				编辑政策
+			</a>。
+		</p>
+	</article>
+</BaseLayout>

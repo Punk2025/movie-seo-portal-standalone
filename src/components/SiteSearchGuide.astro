@@ -1,0 +1,541 @@
+---
+import type { SearchGuideItem } from '../lib/search-guide-payload';
+import { paths } from '../lib/paths';
+
+interface Props {
+	items: SearchGuideItem[];
+	/** 数据源已配置时：打开浮层前请求运行期接口以同步弱引导链接 */
+	runtimePortalSync?: boolean;
+	/** 同源省略；纯静态托管时可指向外置 BFF（无尾斜杠），请求 `{base}/search-guide` */
+	runtimeApiBase?: string;
+}
+
+const { items, runtimePortalSync = false, runtimeApiBase = '' } = Astro.props;
+---
+
+<div id="site-search-guide-root" class="site-search-guide flex shrink-0">
+	<button
+		type="button"
+		class="sg-open inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-500/35 ring-2 ring-amber-200/70 transition hover:brightness-110 hover:shadow-xl hover:shadow-amber-500/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 dark:ring-amber-400/40 dark:focus-visible:ring-offset-zinc-900 sm:px-5"
+		aria-haspopup="dialog"
+		aria-expanded="false"
+		aria-controls="sg-dialog"
+	>
+		<svg class="h-4 w-4 opacity-95" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			<path
+				d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"></path>
+			<path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+		</svg>
+		<span>搜影片</span>
+	</button>
+
+	<dialog
+		id="sg-dialog"
+		class="sg-dialog max-h-[min(90vh,720px)] w-[min(calc(100vw-2rem),420px)] overflow-hidden rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 [&::backdrop]:bg-zinc-950/55"
+	>
+		<div class="flex max-h-[min(90vh,720px)] flex-col">
+			<div
+				class="relative border-b border-zinc-100 bg-gradient-to-br from-amber-50/90 to-orange-50/80 px-5 pb-4 pt-5 dark:border-zinc-800 dark:from-amber-950/40 dark:to-zinc-900"
+			>
+				<button
+					type="button"
+					class="sg-close absolute right-3 top-3 rounded-full p-2 text-zinc-500 hover:bg-white/80 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+					aria-label="关闭"
+				>
+					<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path
+							d="M6 6l12 12M18 6L6 18"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"></path>
+					</svg>
+				</button>
+				<p class="text-xs font-semibold uppercase tracking-wider text-amber-800/80 dark:text-amber-400/90">
+					快速找片
+				</p>
+				<div class="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+					<h2 class="min-w-0 flex-1 text-lg font-bold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50">
+						搜索片名 · 查看观看指引
+					</h2>
+					<a
+						href={paths.movieNav()}
+						class="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border border-amber-400/70 bg-white/95 px-3 py-1.5 text-xs font-bold text-amber-900 shadow-sm ring-1 ring-amber-200/70 transition hover:border-amber-500 hover:bg-amber-50 dark:border-amber-500/50 dark:bg-zinc-900/90 dark:text-amber-200 dark:ring-amber-600/40 dark:hover:bg-amber-950/80 sm:self-auto sm:py-2 sm:text-sm"
+					>
+						<svg class="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path
+								d="M12 3 4 21l8-4 8 4-8-18Z"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linejoin="round"></path>
+							<path d="M12 9v6M9 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+						</svg>
+						影视导航
+					</a>
+				</div>
+				<label class="sr-only" for="sg-filter">搜索片名</label>
+				<input
+					id="sg-filter"
+					type="search"
+					autocomplete="off"
+					placeholder="例如：鱿鱼、悬疑、2026…"
+					class="sg-filter mt-4 w-full rounded-xl border border-amber-200/80 bg-white/90 px-4 py-3 text-sm shadow-inner outline-none ring-amber-400/30 placeholder:text-zinc-400 focus:border-amber-400 focus:ring-2 dark:bg-zinc-950/60 dark:border-zinc-600 dark:focus:border-amber-500"
+				/>
+			</div>
+
+			<div class="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
+				<div class="sg-quick-wrap hidden border-b border-zinc-100 py-4 dark:border-zinc-800">
+					<p class="text-xs font-medium text-zinc-500 dark:text-zinc-400">已有观看指引</p>
+					<div
+						class="sg-quick mt-2 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+					>
+					</div>
+				</div>
+
+				<div
+					class="sg-cta scroll-mt-3 my-4 hidden rounded-xl border border-amber-200/70 bg-amber-50/50 p-4 shadow-sm dark:border-amber-500/25 dark:bg-amber-950/20"
+				>
+					<p
+						class="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-400/90"
+					>
+						观看与延伸阅读
+					</p>
+					<p
+						class="sg-cta-title mt-2 text-base font-bold leading-snug text-zinc-900 dark:text-zinc-50"
+					>
+					</p>
+					<a
+						href="#"
+						class="sg-cta-primary mt-4 block rounded-lg border border-zinc-200 bg-white px-4 py-3.5 text-left text-sm font-semibold text-amber-900 shadow-sm transition hover:border-amber-400 hover:bg-amber-50/40 dark:border-zinc-600 dark:bg-zinc-950 dark:text-amber-300 dark:hover:border-amber-500"
+					></a>
+					<div class="sg-cta-extras mt-3 space-y-1.5 text-sm"></div>
+					<a
+						href="#"
+						class="sg-detail mt-5 inline-flex items-center gap-1 text-sm font-semibold text-amber-800 underline-offset-2 hover:underline dark:text-amber-400"
+					>
+						进入影片详情页
+						<span aria-hidden="true">→</span>
+					</a>
+				</div>
+
+				<p class="sg-results-label text-xs font-medium text-zinc-500 dark:text-zinc-400">
+					<span class="sg-results-title">全部影片</span>
+					<span class="sg-count font-normal text-zinc-400">(0)</span>
+				</p>
+				<ul class="sg-list mt-2 space-y-1.5" role="listbox" aria-label="搜索结果"></ul>
+			</div>
+		</div>
+	</dialog>
+</div>
+
+<script define:vars={{ items, runtimePortalSync, runtimeApiBase, movieNavPath: paths.movieNav() }}>
+	(async () => {
+		const root = document.getElementById('site-search-guide-root');
+		if (!root) return;
+		const openBtn = root.querySelector('.sg-open');
+		const closeBtn = root.querySelector('.sg-close');
+		const dialog = root.querySelector('#sg-dialog');
+		const filter = root.querySelector('.sg-filter');
+		const listEl = root.querySelector('.sg-list');
+		const countEl = root.querySelector('.sg-count');
+		const resultsTitleEl = root.querySelector('.sg-results-title');
+		const quickWrap = root.querySelector('.sg-quick-wrap');
+		const quickEl = root.querySelector('.sg-quick');
+		const ctaBox = root.querySelector('.sg-cta');
+		const ctaTitle = root.querySelector('.sg-cta-title');
+		const ctaPrimary = root.querySelector('.sg-cta-primary');
+		const ctaExtras = root.querySelector('.sg-cta-extras');
+		const detailA = root.querySelector('.sg-detail');
+
+		if (
+			!(openBtn instanceof HTMLButtonElement) ||
+			!(closeBtn instanceof HTMLButtonElement) ||
+			!(dialog instanceof HTMLDialogElement) ||
+			!(filter instanceof HTMLInputElement) ||
+			!(listEl instanceof HTMLUListElement) ||
+			!(countEl instanceof HTMLSpanElement) ||
+			!(resultsTitleEl instanceof HTMLSpanElement) ||
+			!(quickWrap instanceof HTMLDivElement) ||
+			!(quickEl instanceof HTMLDivElement) ||
+			!(ctaBox instanceof HTMLDivElement) ||
+			!(ctaTitle instanceof HTMLParagraphElement) ||
+			!(ctaPrimary instanceof HTMLAnchorElement) ||
+			!(ctaExtras instanceof HTMLDivElement) ||
+			!(detailA instanceof HTMLAnchorElement)
+		) {
+			return;
+		}
+
+		let guideItems = items;
+		if (runtimePortalSync) {
+			const base = (runtimeApiBase ?? '').trim().replace(/\/$/, '');
+			const url = base ? `${base}/search-guide` : '/api/runtime/search-guide';
+			try {
+				const r = await fetch(url);
+				if (r.ok) {
+					const j = await r.json();
+					if (Array.isArray(j) && j.length > 0) guideItems = j;
+				}
+			} catch {}
+		}
+
+		const norm = (s) => (s ?? '').toLowerCase().trim();
+
+		const itemsWithGuide = guideItems.filter((x) => x.links?.length);
+
+		function scoreMatch(item, q) {
+			const t = norm(item.title);
+			const s = norm(String(item.slug ?? ''));
+			if (t === q || s === q) return 100;
+			if (t.startsWith(q)) return 80;
+			if (t.includes(q)) return 60;
+			if (s.includes(q)) return 40;
+			return 0;
+		}
+
+		function pickBestMatch(pool, qRaw) {
+			const q = norm(qRaw);
+			if (!pool?.length) return undefined;
+			if (!q) return pool[0];
+			let best = pool[0];
+			let bestScore = scoreMatch(best, q);
+			for (let i = 1; i < pool.length; i++) {
+				const item = pool[i];
+				const sc = scoreMatch(item, q);
+				if (sc > bestScore) {
+					best = item;
+					bestScore = sc;
+				} else if (sc === bestScore && sc > 0 && norm(item.title).length < norm(best.title).length) {
+					best = item;
+				}
+			}
+			return bestScore > 0 ? best : undefined;
+		}
+
+		/**
+		 * 1) 带指引且关键词命中（片名 / slug / 指引文案）
+		 * 2) 否则全库按片名、slug 命中（可无指引，卡片标题仍对）
+		 * 3) 无命中 → 空列表（不再用无关指引片单冒充「搜索结果」）
+		 */
+		function poolForQuery(qRaw) {
+			const q = norm(qRaw);
+			if (!q) return guideItems;
+
+			const linkHaystack = (item) => {
+				for (const link of item.links ?? []) {
+					if (norm(link.label).includes(q)) return true;
+					if (link.subtitle && norm(link.subtitle).includes(q)) return true;
+				}
+				return false;
+			};
+
+			const guidedBodyHit = (item) =>
+				norm(item.title).includes(q) ||
+				norm(String(item.slug ?? '')).includes(q) ||
+				linkHaystack(item);
+
+			const matchedGuided = itemsWithGuide.filter(guidedBodyHit);
+			if (matchedGuided.length > 0) return matchedGuided;
+
+			const titleOrSlug = guideItems.filter(
+				(item) => norm(item.title).includes(q) || norm(String(item.slug ?? '')).includes(q),
+			);
+			return titleOrSlug;
+		}
+
+		function shouldAutoPickForQuery(qRaw) {
+			const q = norm(qRaw);
+			if (!q) return false;
+			const matchedGuided = itemsWithGuide.filter(
+				(item) =>
+					norm(item.title).includes(q) ||
+					norm(String(item.slug ?? '')).includes(q) ||
+					item.links?.some(
+						(link) =>
+							norm(link.label).includes(q) ||
+							Boolean(link.subtitle && norm(link.subtitle).includes(q)),
+					),
+			);
+			if (matchedGuided.length > 0) return true;
+			return guideItems.some(
+				(item) => norm(item.title).includes(q) || norm(String(item.slug ?? '')).includes(q),
+			);
+		}
+
+		function setDetailFoot(href, textBeforeArrow) {
+			detailA.href = href;
+			detailA.replaceChildren();
+			detailA.append(document.createTextNode(`${textBeforeArrow} `));
+			const arr = document.createElement('span');
+			arr.setAttribute('aria-hidden', 'true');
+			arr.textContent = '→';
+			detailA.appendChild(arr);
+		}
+
+		/**
+		 * 未命中已加载片单：不跳搜索引擎。
+		 * 若站内已有任意 portal_cta，则用首条已配置指引片的合作方链接作为主按钮，便于零匹配时仍有真实弱引导入口。
+		 */
+		function showCtaFallbackForQuery(raw) {
+			const t = (raw ?? '').trim() || '本片';
+			ctaBox.classList.remove('hidden');
+			ctaTitle.textContent = `《${t}》`;
+			ctaExtras.replaceChildren();
+
+			const links = itemsWithGuide[0]?.links;
+			const L0 = links?.[0];
+
+			if (L0?.url) {
+				ctaPrimary.classList.remove('hidden');
+				ctaPrimary.textContent = (L0.label ?? '').trim() || '完整剧集入口';
+				ctaPrimary.href = L0.url;
+				ctaPrimary.target = '_blank';
+				ctaPrimary.rel = 'noopener noreferrer';
+
+				if (links.length > 1) {
+					for (let i = 1; i < links.length; i++) {
+						const L = links[i];
+						const a = document.createElement('a');
+						a.href = L.url;
+						a.target = '_blank';
+						a.rel = 'noopener noreferrer';
+						a.className = 'text-amber-800 underline-offset-2 hover:underline dark:text-amber-400';
+						a.textContent = L.label;
+						ctaExtras.appendChild(a);
+					}
+				}
+				if (ctaExtras.childElementCount === 0) ctaExtras.classList.add('hidden');
+				else ctaExtras.classList.remove('hidden');
+			} else {
+				ctaPrimary.classList.add('hidden');
+				ctaPrimary.removeAttribute('href');
+				ctaPrimary.removeAttribute('target');
+				ctaPrimary.removeAttribute('rel');
+				ctaExtras.classList.add('hidden');
+			}
+
+			setDetailFoot(movieNavPath, '进入影视导航');
+
+			queueMicrotask(() => {
+				ctaBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+			});
+		}
+
+		function showCta(item) {
+			ctaBox.classList.remove('hidden');
+			ctaTitle.textContent = `《${item.title}》`;
+			const slugEnc = encodeURIComponent(item.slug);
+			setDetailFoot(`/movie/${slugEnc}`, '进入影片详情页');
+
+			ctaExtras.replaceChildren();
+			const links = item.links;
+			if (links?.length) {
+				ctaPrimary.classList.remove('hidden');
+				const L0 = links[0];
+				ctaPrimary.textContent = (L0.label ?? '').trim() || '完整剧集入口';
+				ctaPrimary.href = L0.url;
+				ctaPrimary.target = '_blank';
+				ctaPrimary.rel = 'noopener noreferrer';
+				if (links.length > 1) {
+					for (let i = 1; i < links.length; i++) {
+						const L = links[i];
+						const a = document.createElement('a');
+						a.href = L.url;
+						a.target = '_blank';
+						a.rel = 'noopener noreferrer';
+						a.className = 'text-amber-800 underline-offset-2 hover:underline dark:text-amber-400';
+						a.textContent = L.label;
+						ctaExtras.appendChild(a);
+					}
+				}
+				if (ctaExtras.childElementCount === 0) ctaExtras.classList.add('hidden');
+				else ctaExtras.classList.remove('hidden');
+			} else {
+				ctaPrimary.classList.add('hidden');
+				ctaPrimary.removeAttribute('href');
+				ctaPrimary.removeAttribute('target');
+				ctaPrimary.removeAttribute('rel');
+				ctaExtras.replaceChildren();
+				ctaExtras.classList.add('hidden');
+			}
+
+			queueMicrotask(() => {
+				ctaBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+			});
+		}
+
+		let selectedItem = null;
+
+		function renderList(arr, selected) {
+			listEl.replaceChildren();
+			countEl.textContent = `(${arr.length})`;
+
+			for (const item of arr) {
+				const li = document.createElement('li');
+				const isSel = selected && selected.slug === item.slug;
+				li.className = [
+					'sg-item flex w-full cursor-pointer rounded-xl border px-3 py-2.5 text-left text-sm transition',
+					isSel
+						? 'border-amber-400 bg-amber-50 dark:border-amber-500 dark:bg-amber-950/30'
+						: 'border-transparent bg-zinc-50 hover:border-amber-200 hover:bg-amber-50/50 dark:bg-zinc-800/50 dark:hover:border-amber-500/40 dark:hover:bg-amber-950/20',
+				].join(' ');
+				li.setAttribute('role', 'option');
+				li.setAttribute('aria-selected', String(isSel));
+				const row = document.createElement('div');
+				row.className = 'flex flex-1 items-start justify-between gap-2';
+				const title = document.createElement('span');
+				title.className = 'font-medium text-zinc-900 dark:text-zinc-100';
+				title.textContent = item.title;
+				row.appendChild(title);
+				if (item.links?.length) {
+					const badge = document.createElement('span');
+					badge.className =
+						'shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 dark:text-amber-400';
+					badge.textContent = '指引';
+					row.appendChild(badge);
+				}
+				li.appendChild(row);
+				li.addEventListener('click', () => {
+					selectedItem = item;
+					renderList(arr, item);
+					showCta(item);
+				});
+				listEl.appendChild(li);
+			}
+		}
+
+		function fillQuick() {
+			const withGuide = guideItems.filter((x) => x.links?.length);
+			if (withGuide.length === 0) {
+				quickWrap.classList.add('hidden');
+				return;
+			}
+			quickWrap.classList.remove('hidden');
+			quickEl.replaceChildren();
+			for (const item of withGuide.slice(0, 8)) {
+				const b = document.createElement('button');
+				b.type = 'button';
+				b.className =
+					'shrink-0 rounded-full border border-amber-300/80 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 shadow-sm hover:bg-amber-50 dark:border-amber-500/40 dark:bg-zinc-900 dark:text-amber-200 dark:hover:bg-amber-950/40';
+				b.textContent = item.title.length > 8 ? `${item.title.slice(0, 8)}…` : item.title;
+				b.title = item.title;
+				b.addEventListener('click', () => {
+					selectedItem = item;
+					let pool = poolForQuery(filter.value);
+					if (norm(filter.value) && !pool.some((x) => x.slug === item.slug)) {
+						pool = [item, ...pool];
+					}
+					renderList(pool, item);
+					showCta(item);
+					listEl.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+				});
+				quickEl.appendChild(b);
+			}
+		}
+
+		function applyFilter() {
+			const q = norm(filter.value);
+			const pool = poolForQuery(filter.value);
+			if (!q) {
+				resultsTitleEl.textContent = '全部影片';
+				ctaBox.classList.add('hidden');
+				renderList(
+					pool,
+					selectedItem && pool.some((x) => x.slug === selectedItem.slug) ? selectedItem : null,
+				);
+				return;
+			}
+
+			const allRowsHaveGuide = pool.length > 0 && pool.every((x) => x.links?.length);
+			resultsTitleEl.textContent = allRowsHaveGuide ? '观看指引片单' : '搜索结果';
+
+			if (pool.length === 0) {
+				resultsTitleEl.textContent = '未找到匹配';
+				renderList([], null);
+				selectedItem = null;
+				showCtaFallbackForQuery(filter.value);
+				return;
+			}
+
+			const autoPick = shouldAutoPickForQuery(filter.value);
+			let keep =
+				selectedItem && pool.some((x) => x.slug === selectedItem.slug) ? selectedItem : undefined;
+			if (keep === undefined && autoPick) {
+				keep = pickBestMatch(pool, filter.value) ?? pool[0];
+			}
+			if (keep === undefined) {
+				selectedItem = null;
+				renderList(pool, null);
+				ctaBox.classList.add('hidden');
+				return;
+			}
+
+			selectedItem = keep;
+			renderList(pool, keep);
+			showCta(keep);
+		}
+
+		function openSearchGuide(initialQuery) {
+			const q0 = typeof initialQuery === 'string' ? initialQuery : '';
+			dialog.showModal();
+			openBtn.setAttribute('aria-expanded', 'true');
+			selectedItem = null;
+			filter.value = q0;
+			fillQuick();
+			if (!norm(filter.value)) {
+				ctaBox.classList.add('hidden');
+				resultsTitleEl.textContent = '全部影片';
+				renderList(guideItems, null);
+			} else {
+				applyFilter();
+			}
+			queueMicrotask(() => filter.focus());
+		}
+
+		openBtn.addEventListener('click', () => openSearchGuide(''));
+
+		document.addEventListener(
+			'click',
+			(e) => {
+				const el = e.target?.closest?.('[data-sg-open]');
+				if (!el) return;
+				e.preventDefault();
+				const q = el.getAttribute('data-sg-query') ?? '';
+				openSearchGuide(q);
+			},
+			true,
+		);
+
+		closeBtn.addEventListener('click', () => dialog.close());
+
+		dialog.addEventListener('close', () => {
+			openBtn.setAttribute('aria-expanded', 'false');
+		});
+
+		filter.addEventListener('input', () => {
+			const q = norm(filter.value);
+			if (!q) selectedItem = null;
+			applyFilter();
+		});
+
+		filter.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				if (!norm(filter.value)) return;
+				const pool = poolForQuery(filter.value);
+				const pick =
+					pickBestMatch(pool, filter.value) ??
+					(shouldAutoPickForQuery(filter.value) ? pool[0] : undefined);
+				if (pick) {
+					selectedItem = pick;
+					renderList(pool, pick);
+					showCta(pick);
+				} else {
+					showCtaFallbackForQuery(filter.value);
+				}
+			}
+		});
+	})();
+</script>

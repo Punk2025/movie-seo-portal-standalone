@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+
+const title = `免责声明 | ${SITE_DISPLAY_NAME}`;
+const description = '内容准确性、版权与外链责任的限定声明。';
+const path = paths.disclaimer();
+---
+
+<BaseLayout title={title} description={description} path={path}>
+	<article class="mx-auto max-w-3xl space-y-6 py-10 text-zinc-700 dark:text-zinc-300">
+		<h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-50">免责声明</h1>
+		<p class="leading-relaxed">
+			访问与使用本站，即表示您已阅读并理解下列免责事项。若您需要法律意见，请咨询执业律师。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">1. 内容准确性</h2>
+		<p class="leading-relaxed">
+			本站信息按<strong>「现状」</strong>提供，不对任何内容的完整性、时效性或适用性作明示或默示担保。情节简介、演职员表、评分与更新时间等均可能来自<strong>合作数据或自动整理的摘要</strong>，<strong>可能与实际播出信息不一致</strong>。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">2. 版权与肖像</h2>
+		<p class="leading-relaxed">
+			影片海报、剧照、片名与商标等知识产权归权利人所有。若您认为本站展示内容侵犯合法权益，请通过
+			<a href={paths.contact()} class="text-amber-700 hover:underline dark:text-amber-400">
+				联系我们
+			</a>
+			提交完整通知，我们将在核实后依法采取删除、屏蔽或断开链接等措施。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">3. 外链与第三方</h2>
+		<p class="leading-relaxed">
+			本站可能包含指向第三方网站的链接。我们不对第三方内容、隐私政策或服务可用性负责；您访问外链的风险由您自行承担。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">4. 自动生成内容</h2>
+		<p class="leading-relaxed">
+			由系统自动生成的影评、摘要等<strong>不构成专业影评或投资／治疗建议</strong>，亦不得引用为新闻事实的孤证。请结合正片与权威媒体自行判断。
+		</p>
+		<h2 class="mt-8 text-xl font-semibold text-zinc-900 dark:text-zinc-50">5. 未成年人</h2>
+		<p class="leading-relaxed">
+			若当地法律对未成年人使用互联网有特殊限制，请监护人履行监护职责。本站不面向儿童主动收集可识别个人信息（详见
+			<a href={paths.privacy()} class="text-amber-700 hover:underline dark:text-amber-400">
+				隐私政策
+			</a>）。
+		</p>
+	</article>
+</BaseLayout>

@@ -1,0 +1,336 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HomeCategoryStrip from '../components/HomeCategoryStrip.astro';
+import HomeSection from '../components/HomeSection.astro';
+import MovieCard from '../components/MovieCard.astro';
+import {
+	getAiPicks,
+	getAllTags,
+	getHighScorePicks,
+	getHotActors,
+	getHotMovies,
+	getHotShortDrama,
+	getLatestReviews,
+	getNetflixHot,
+	getTodayUpdates,
+} from '../data/mock';
+import {
+	getNiuniuClientFromEnv,
+	getNiuniuDiscoveryPool,
+	isNiuniuConfigured,
+	loadHomeMoviesFromNiuniu,
+	moviesForHomeReviewTeasersFromPool,
+} from '../data/niuniu-build';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+import { HOME_COLUMN_TOP_BLOCK } from '../lib/column-seo-copy';
+
+const useNiuniu = isNiuniuConfigured();
+const cfg = useNiuniu ? getNiuniuClientFromEnv() : null;
+const [niuniuHome, niuniuDiscoveryPool] =
+	useNiuniu && cfg
+		? await Promise.all([loadHomeMoviesFromNiuniu(cfg), getNiuniuDiscoveryPool(cfg)])
+		: [null, null];
+const niuniuReviewBlock =
+	useNiuniu && niuniuDiscoveryPool
+		? moviesForHomeReviewTeasersFromPool(niuniuDiscoveryPool, 8)
+		: null;
+
+const todayUpdates = niuniuHome?.todayUpdates ?? getTodayUpdates();
+const hotMovies = niuniuHome?.hotMovies ?? getHotMovies();
+const hotShortDrama = niuniuHome?.hotShortDrama ?? getHotShortDrama();
+const netflixHot = niuniuHome?.netflixHot ?? getNetflixHot();
+const aiPicks = niuniuHome?.aiPicks ?? getAiPicks();
+const highScorePicks = niuniuHome?.highScore ?? getHighScorePicks();
+const hotActors = niuniuHome?.hotActors ?? getHotActors();
+const hotTags = niuniuHome?.hotTags ?? getAllTags();
+
+const title = `${SITE_DISPLAY_NAME} · 今日热门与精选片单`;
+const description =
+	'聚合今日更新、热门电影与短剧、奈飞榜单、影评摘录与高分推荐，发现下一部值得看的作品。';
+const highScoreSectionSubtitle = useNiuniu
+	? '优先展示高分作品；条目较少时会自动纳入更多佳片'
+	: '评分 ≥ 8.0';
+const path = '/';
+
+/** 首页各榜单默认展示条数，其余折叠，降低首屏链接密度 */
+const HOME_LIST_PREVIEW = 6;
+
+const jsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'WebSite',
+	name: SITE_DISPLAY_NAME,
+	url: Astro.site?.href ?? '',
+	description,
+};
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	path={path}
+	ogImageAlt={`${SITE_DISPLAY_NAME} · 热门影视推荐`}
+	jsonLd={jsonLd}
+>
+	<div class="py-10">
+		<h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+			2026热门影视推荐
+		</h1>
+	</div>
+
+	<HomeCategoryStrip />
+
+	<HomeSection title="今日更新" subtitle="按发布时间排序的近期条目" columnTop={HOME_COLUMN_TOP_BLOCK}>
+		{
+			todayUpdates.length > 0 ? (
+				<>
+					{todayUpdates.slice(0, HOME_LIST_PREVIEW).map((m) => (
+						<MovieCard movie={m} />
+					))}
+					{todayUpdates.length > HOME_LIST_PREVIEW ? (
+						<details class="col-span-full rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/40">
+							<summary class="cursor-pointer text-sm font-semibold text-amber-800 dark:text-amber-400">
+								展开其余 {todayUpdates.length - HOME_LIST_PREVIEW} 条
+							</summary>
+							<div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+								{todayUpdates.slice(HOME_LIST_PREVIEW).map((m) => (
+									<MovieCard movie={m} />
+								))}
+							</div>
+						</details>
+					) : null}
+				</>
+			) : (
+				<p class="col-span-full text-sm text-zinc-500 dark:text-zinc-400">
+					暂无近期更新条目，请浏览下方热门推荐。
+				</p>
+			)
+		}
+	</HomeSection>
+
+	<HomeSection title="热门电影" subtitle="按热度排序" columnTop={HOME_COLUMN_TOP_BLOCK}>
+		<>
+			{hotMovies.slice(0, HOME_LIST_PREVIEW).map((m) => (
+				<MovieCard movie={m} />
+			))}
+			{hotMovies.length > HOME_LIST_PREVIEW ? (
+				<details class="col-span-full rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/40">
+					<summary class="cursor-pointer text-sm font-semibold text-amber-800 dark:text-amber-400">
+						展开其余 {hotMovies.length - HOME_LIST_PREVIEW} 条
+					</summary>
+					<div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+						{hotMovies.slice(HOME_LIST_PREVIEW).map((m) => (
+							<MovieCard movie={m} />
+						))}
+					</div>
+				</details>
+			) : null}
+		</>
+	</HomeSection>
+
+	<HomeSection
+		title="热门短剧"
+		subtitle="竖屏/微剧/短剧等：由热门池按片名与标签关键词筛选（见对接文档 §7.2）"
+		columnTop={HOME_COLUMN_TOP_BLOCK}
+	>
+		{
+			hotShortDrama.length > 0 ? (
+				<>
+					{hotShortDrama.slice(0, HOME_LIST_PREVIEW).map((m) => (
+						<MovieCard movie={m} />
+					))}
+					{hotShortDrama.length > HOME_LIST_PREVIEW ? (
+						<details class="col-span-full rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/40">
+							<summary class="cursor-pointer text-sm font-semibold text-amber-800 dark:text-amber-400">
+								展开其余 {hotShortDrama.length - HOME_LIST_PREVIEW} 条
+							</summary>
+							<div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+								{hotShortDrama.slice(HOME_LIST_PREVIEW).map((m) => (
+									<MovieCard movie={m} />
+								))}
+							</div>
+						</details>
+					) : null}
+				</>
+			) : (
+				<p class="col-span-full text-sm text-zinc-500 dark:text-zinc-400">
+					当前列表里暂无短剧向内容，欢迎看看其他热门推荐。
+				</p>
+			)
+		}
+	</HomeSection>
+
+	<HomeSection
+		title="Netflix 热榜"
+		subtitle="奈飞向：热门池中片名或标签含 Netflix/奈飞/网飞（不区分大小写）"
+		columnTop={HOME_COLUMN_TOP_BLOCK}
+	>
+		{
+			netflixHot.length > 0 ? (
+				<>
+					{netflixHot.slice(0, HOME_LIST_PREVIEW).map((m) => (
+						<MovieCard movie={m} />
+					))}
+					{netflixHot.length > HOME_LIST_PREVIEW ? (
+						<details class="col-span-full rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/40">
+							<summary class="cursor-pointer text-sm font-semibold text-amber-800 dark:text-amber-400">
+								展开其余 {netflixHot.length - HOME_LIST_PREVIEW} 条
+							</summary>
+							<div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+								{netflixHot.slice(HOME_LIST_PREVIEW).map((m) => (
+									<MovieCard movie={m} />
+								))}
+							</div>
+						</details>
+					) : null}
+				</>
+			) : (
+				<p class="col-span-full text-sm text-zinc-500 dark:text-zinc-400">
+					暂时没有奈飞向片单，欢迎浏览其他榜单。
+				</p>
+			)
+		}
+		<p slot="action" class="text-sm">
+			<a href={paths.top('netflix')} class="font-medium text-amber-700 hover:underline dark:text-amber-400">
+				查看完整榜单 →
+			</a>
+		</p>
+	</HomeSection>
+
+	<HomeSection title="精选推荐" subtitle="按评分择优（无评分时接近热门）" columnTop={HOME_COLUMN_TOP_BLOCK}>
+		<>
+			{aiPicks.slice(0, HOME_LIST_PREVIEW).map((m) => (
+				<MovieCard movie={m} />
+			))}
+			{aiPicks.length > HOME_LIST_PREVIEW ? (
+				<details class="col-span-full rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/40">
+					<summary class="cursor-pointer text-sm font-semibold text-amber-800 dark:text-amber-400">
+						展开其余 {aiPicks.length - HOME_LIST_PREVIEW} 条
+					</summary>
+					<div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+						{aiPicks.slice(HOME_LIST_PREVIEW).map((m) => (
+							<MovieCard movie={m} />
+						))}
+					</div>
+				</details>
+			) : null}
+		</>
+	</HomeSection>
+
+	<HomeSection title="最新影评" subtitle="观影参考与观点摘录" columnTop={HOME_COLUMN_TOP_BLOCK}>
+		<div class="contents">
+			{
+				useNiuniu ? (
+					niuniuReviewBlock && niuniuReviewBlock.movies.length > 0 ? (
+						<>
+							{niuniuReviewBlock.movies.map((m) => (
+								<a
+									href={paths.review(m.slug)}
+									class="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900"
+								>
+									<h3 class="font-semibold text-zinc-900 dark:text-zinc-100">
+										{m.seoTitle?.trim() || `${m.title.trim() || '影片'} · 影评`}
+									</h3>
+									<p class="mt-2 line-clamp-3 text-sm text-zinc-600 dark:text-zinc-400">
+										{(
+											m.seoDescription?.trim() ||
+											m.ai_review?.trim() ||
+											m.description?.trim() ||
+											'暂无摘录'
+										).slice(0, 200)}
+									</p>
+								</a>
+							))}
+						</>
+					) : (
+						<p class="col-span-full rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-600">
+							暂无内容。
+						</p>
+					)
+				) : (
+					getLatestReviews().map((r) => (
+						<a
+							href={paths.review(r.slug)}
+							class="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900"
+						>
+							<h3 class="font-semibold text-zinc-900 dark:text-zinc-100">{r.meta_title}</h3>
+							<p class="mt-2 line-clamp-3 text-sm text-zinc-600 dark:text-zinc-400">{r.meta_description}</p>
+						</a>
+					))
+				)
+			}
+		</div>
+		<p slot="action" class="text-sm">
+			<a
+				href={paths.reviewsHub()}
+				class="font-medium text-amber-700 hover:underline dark:text-amber-400"
+			>
+				查看全部影评 →
+			</a>
+		</p>
+	</HomeSection>
+
+	<HomeSection title="高分推荐" subtitle={highScoreSectionSubtitle} columnTop={HOME_COLUMN_TOP_BLOCK}>
+		<>
+			{highScorePicks.slice(0, HOME_LIST_PREVIEW).map((m) => (
+				<MovieCard movie={m} />
+			))}
+			{highScorePicks.length > HOME_LIST_PREVIEW ? (
+				<details class="col-span-full rounded-xl border border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/40">
+					<summary class="cursor-pointer text-sm font-semibold text-amber-800 dark:text-amber-400">
+						展开其余 {highScorePicks.length - HOME_LIST_PREVIEW} 条
+					</summary>
+					<div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+						{highScorePicks.slice(HOME_LIST_PREVIEW).map((m) => (
+							<MovieCard movie={m} />
+						))}
+					</div>
+				</details>
+			) : null}
+		</>
+	</HomeSection>
+
+	<HomeSection
+		title="热门类型"
+		subtitle="来自热门影片的类型与关键词，点击可快速搜索相关片单"
+		columnTop={HOME_COLUMN_TOP_BLOCK}
+	>
+		<div class="contents">
+			{
+				hotTags.length > 0 ? (
+					hotTags.map((t) => (
+						<button
+							type="button"
+							data-sg-open
+							data-sg-query={t.name}
+							class="cursor-pointer rounded-lg border border-zinc-200 bg-white px-4 py-5 text-center shadow-sm transition hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900"
+						>
+							<span class="font-medium text-zinc-900 dark:text-zinc-100">{t.name}</span>
+						</button>
+					))
+				) : (
+					<p class="col-span-full text-sm text-zinc-500 dark:text-zinc-400">暂无类型关键词，请稍后再试。</p>
+				)
+			}
+		</div>
+	</HomeSection>
+
+	<HomeSection title="热门演员" subtitle="按参演作品热度累计" columnTop={HOME_COLUMN_TOP_BLOCK}>
+		<div class="contents">
+			{
+				hotActors.length > 0 ? (
+					hotActors.map((a) => (
+						<a
+							href={paths.actor(a.slug)}
+							class="rounded-lg border border-zinc-200 bg-white px-4 py-6 text-center shadow-sm transition hover:border-amber-400 dark:border-zinc-700 dark:bg-zinc-900"
+						>
+							<span class="font-medium text-zinc-900 dark:text-zinc-100">{a.name}</span>
+						</a>
+					))
+				) : (
+					<p class="col-span-full text-sm text-zinc-500 dark:text-zinc-400">暂无演员汇总数据，请稍后再试。</p>
+				)
+			}
+		</div>
+	</HomeSection>
+</BaseLayout>

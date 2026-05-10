@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import GuidePortalCallout from '../components/GuidePortalCallout.astro';
+import { paths } from '../lib/paths';
+import { SITE_DISPLAY_NAME } from '../lib/site-brand';
+
+const title = `影视社区 · 讨论与互动说明 | ${SITE_DISPLAY_NAME}`;
+const description =
+	'社区类互动、转载与外链的一般性说明；本站正文以资讯阅读为主，深度讨论可指向合作社区或指定入口。';
+const path = paths.movieCommunity();
+
+const jsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'Article',
+	headline: '影视社区：讨论与互动说明',
+	description,
+};
+---
+
+<BaseLayout title={title} description={description} path={path} jsonLd={jsonLd}>
+	<article class="mx-auto max-w-3xl space-y-8 py-10">
+		<header class="space-y-3">
+			<h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">影视社区</h1>
+			<p class="text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
+				本页说明读者在引用本站资讯、参与外部讨论时的<strong>文明表达与版权边界</strong>。本站页面以静态资讯与聚合展示为主，实时聊天或论坛功能若由合作方提供，以合作方规则为准。
+			</p>
+		</header>
+
+		<section class="space-y-4 text-zinc-700 dark:text-zinc-300" aria-labelledby="mc-s1">
+			<h2 id="mc-s1" class="text-xl font-bold text-zinc-900 dark:text-zinc-50">文明讨论</h2>
+			<p class="leading-relaxed">
+				欢迎就剧情、表演与类型展开讨论；请避免人身攻击、政治敏感极端言论及与影片无关的广告引流。对剧情涉及剧透时，建议在公开渠道标注「含剧透」以尊重其他观众。
+			</p>
+		</section>
+
+		<section class="space-y-4 text-zinc-700 dark:text-zinc-300" aria-labelledby="mc-s2">
+			<h2 id="mc-s2" class="text-xl font-bold text-zinc-900 dark:text-zinc-50">转载与署名</h2>
+			<p class="leading-relaxed">
+				引用本站摘要或段落时请注明出处与链接；商业转载请先联系
+				<a href={paths.contact()} class="text-amber-700 hover:underline dark:text-amber-400">联系我们</a>。
+				擅自抓取全文用于训练或其它用途可能构成侵权，本站保留追责权利。
+			</p>
+		</section>
+
+		<section class="space-y-4 text-zinc-700 dark:text-zinc-300" aria-labelledby="mc-s3">
+			<h2 id="mc-s3" class="text-xl font-bold text-zinc-900 dark:text-zinc-50">外链与第三方</h2>
+			<p class="leading-relaxed">
+				页面中出现的第三方链接仅为便利读者查阅；点击前请留意浏览器地址栏与证书信息，谨防钓鱼与恶意软件。
+			</p>
+		</section>
+
+		<GuidePortalCallout
+			eyebrow="社区入口"
+			title="前往合作社区或导航"
+			intro="若合作方提供独立的社区、群组或导航入口，可通过下方区域获取二维码或链接。"
+		/>
+	</article>
+</BaseLayout>
